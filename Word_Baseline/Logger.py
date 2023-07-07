@@ -4,16 +4,16 @@ import re
 from sklearn.feature_extraction.text import CountVectorizer
 
 def bag_of_words(text):
-    # Create an instance of CountVectorizer
+    # CountVectorizer cf. scikit-learn
     vectorizer = CountVectorizer()
 
-    # Fit the vectorizer to the text data
+    # Fit transform
     vectorizer.fit_transform([text])
 
-    # Get the feature names (unique words)
+    # Get names
     feature_names = vectorizer.get_feature_names_out()
 
-    # Get the bag of words representation as a dictionary
+    # Get the bag of words representation as a dictionary 
     bag_of_word = dict(zip(feature_names, vectorizer.transform([text]).toarray()[0]))
 
     return bag_of_word
