@@ -78,10 +78,18 @@ class MainWindow(QMainWindow):
 
         self.text_edit = CustomTextEdit(self)
 
-        self.setFixedSize(QSize(400, 300))
+        #self.showMaximized()
+        self.setFixedSize(800,800)
+        self.fontBox = QSpinBox()
+        self.text_edit.setFontPointSize(24)
+        self.statusBar = QStatusBar()
+        self.setStatusBar(self.statusBar)
+        self.text_edit.textChanged.connect(lambda: self.statusBar.showMessage(f"Nombre de caractères : {len(self.text_edit.toPlainText())}"))
 
         # Définit le widget central de la fenêtre.
         self.setCentralWidget(self.text_edit)
+
+
 
         search_action = QAction(QIcon(), "Search", self)
         search_action.setShortcut("Ctrl+F")
@@ -91,52 +99,97 @@ class MainWindow(QMainWindow):
         replace_action.setShortcut("Ctrl+R")
         replace_action.triggered.connect(self.replace)
 
-        bold_action = QAction(QIcon(), "Bold", self)
+        bold_action = QAction(QIcon("./icons/bold.png"), "Bold", self)
         bold_action.setShortcut("Ctrl+B")
+        #Permet de detecter qu'un bouton est utilisé
         bold_action.setCheckable(True)
+        # slot toggle_bold plus bas
         bold_action.toggled.connect(self.toggle_bold)
 
-        underline_action = QAction(QIcon(), "Underline", self)
+        underline_action = QAction(QIcon("./icons/underlined.png"), "Underline", self)
         underline_action.setShortcut("Ctrl+U")
         underline_action.setCheckable(True)
+        # slot toggle_underline plus bas
         underline_action.toggled.connect(self.toggle_underline)
-
-
         menu = self.menuBar()
-        edit_menu = menu.addMenu("&Edit")
+        edit_menu = menu.addMenu("&Operation")
         edit_menu.addAction(search_action)
         edit_menu.addAction(replace_action)
         edit_menu.addSeparator()
         edit_menu.addAction(bold_action)
         edit_menu.addAction(underline_action)
 
+
+        # On ajoute une toolbar pour mettre en gras et souligner
+        toolbar = QToolBar()
+        actUndo = QAction(QIcon("./icons/undo.png"), "Undo", self)
+        actUndo.triggered.connect(self.text_edit.undo)
+        toolbar.addAction(actUndo)
+
+        actRedo = QAction(QIcon("./icons/redo.png"), "Redo", self)
+        actRedo.triggered.connect(self.text_edit.redo)
+        toolbar.addAction(actRedo)
+
+        toolbar.addSeparator()
+
+        toolbar.addAction(bold_action)
+        toolbar.addAction(underline_action)
+
+        toolbar.addSeparator()
+
+        # Actions d'alignements
+        alignL = QAction(QIcon("./icons/alignLeft.png"), "Left Allign", self)
+        alignL.triggered.connect(lambda : self.text_edit.setAlignment(Qt.AlignLeft))
+        toolbar.addAction(alignL)    
+
+        alignMid = QAction(QIcon("./icons/alignCent.png"), "Center Allign", self)
+        alignMid.triggered.connect(lambda : self.text_edit.setAlignment(Qt.AlignCenter))
+        toolbar.addAction(alignMid)
+
+        alignR = QAction(QIcon("./icons/alignRight.png"), "Right Allign", self)
+        alignR.triggered.connect(lambda : self.text_edit.setAlignment(Qt.AlignRight))
+        toolbar.addAction(alignR)
+
+        
+
+
+        self.addToolBar(toolbar)
+
+        # Change la taille du texte
+        self.fontBox.setValue(24)
+        self.fontBox.valueChanged.connect(self.setFontSize)
+        toolbar.addWidget(self.fontBox)
+
+        
+
     def search(self):
-        # Demande à l'utilisateur d'entrer le texte à rechercher
+        # Demande à l'utilisateur d'entrer le texte à rechercher (QInputDialog)
         search_text, ok = QInputDialog.getText(self, "seach", "Enter text to search:")
         if ok:
-            # Recherche la première occurrence du texte recherché dans le widget d'édition de texte
+            # Cherche la première occurrence du texte recherché dans le widget d'édition de texte
             cursor = self.text_edit.document().find(search_text)
             if not cursor.isNull():
-                # Positionne le curseur de texte sur la position trouvée
+                # Positionne le curseur de texte sur la position
                 self.text_edit.setTextCursor(cursor)
-                # Assure que le curseur est visible dans le widget d'édition de texte
+                # Assure que le curseur est visible dans le widget d'editeur de texte
                 self.text_edit.ensureCursorVisible()
             else:
                 # Informe l'utilisateur que le texte n'a pas été trouvé
                 QMessageBox.information(self, "Search", "Text not found.")
 
     def replace(self):
-        # Demande à l'utilisateur d'entrer le texte à remplacer
+        # Demande à l'utilisateur d'entrer le texte à remplacer (Toujours QInputDialog)
         search_text, ok = QInputDialog.getText(self, "Replace", "Enter text to replace:")
         if ok:
-            # Demande à l'utilisateur d'entrer le texte de remplacement
+            # Demande à l'utilisateur d'entrer le texte de remplacement 
             replace_text, ok = QInputDialog.getText(self, "Replace", "Enter replacement text:")
             if ok:
                 document = self.text_edit.document()
                 # Recherche la première occurrence du texte recherché dans le widget d'édition de texte
+                # Toutes les occurrences seront remplacees
                 cursor = document.find(search_text)
                 while not cursor.isNull():
-                    # Remplace le texte par le texte de remplacement
+                    # Remplace l'élément par le nouveau texte
                     cursor.insertText(replace_text)
                     # Recherche l'occurrence suivante du texte recherché
                     cursor = document.find(search_text, cursor)
@@ -152,6 +205,11 @@ class MainWindow(QMainWindow):
         font = self.text_edit.currentFont()
         font.setUnderline(boolsouligner)
         self.text_edit.setCurrentFont(font)
+
+    
+    def setFontSize(self):
+        val = self.fontBox.value()
+        self.text_edit.setFontPointSize(val)
 
 
     
