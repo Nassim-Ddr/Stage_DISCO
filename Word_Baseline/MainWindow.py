@@ -4,12 +4,16 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import signal
-
+from collections import Counter
+from MapperLog import MapperLog
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
-    def keyPressEvent(self, event):
+    def __init__(self, parent= None):
+        super().__init__(parent)
+        self.logger = MapperLog()
 
+    def keyPressEvent(self, event):
         # si on appuie sur CTRL
         modifiers = QApplication.keyboardModifiers()
 
@@ -32,9 +36,9 @@ class CustomTextEdit(QTextEdit):
             self.handle_underline()
         elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
             self.handle_bold()
-        elif event.key() == Qt.Key_Left:
+        elif event.key() == Qt.Key_Left and modifiers == Qt.ControlModifier:
             self.handle_move_cursor_left()
-        elif event.key() == Qt.Key_Right:
+        elif event.key() == Qt.Key_Right and modifiers == Qt.ControlModifier:
             self.handle_move_cursor_right()
 
         # appel le comportement par defaut lie a l'evenement
@@ -42,7 +46,7 @@ class CustomTextEdit(QTextEdit):
 
     def handle_copy(self):
         # toPlainText() recupere le texte
-        print(self.toPlainText())
+        #print(self.toPlainText())
         print("J'ai copié")
 
     def handle_backspace(self):
@@ -64,10 +68,35 @@ class CustomTextEdit(QTextEdit):
         print("Annulay dans l'autre sens")
 
     def handle_move_cursor_left(self):
+        #print(self.textCursor().position())
         print("je vais a gauche")
+        self.updated("moveL")
 
     def handle_move_cursor_right(self):
+        #print(self.textCursor().position())
         print("je vais à droite")
+        self.updated("moveR")
+    
+    def handle_replace(self):
+        self.updated("replace")
+        print("replace")
+
+    def updated(self, command):
+        self.logger.update(command, (self.toPlainText(),self.textCursor().position()))
+    
+
+class WordFrequencyWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.layout = QVBoxLayout()
+        self.label = QLabel(self)
+        self.layout.addWidget(self.label)
+        self.setLayout(self.layout)
+
+    def update_word_frequency(self, text):
+        word_count = Counter(text.split())
+        self.label.setText("Word Frequency:\n" + "\n".join(f"{word}: {count}" for word, count in word_count.items()))
     
 
 class MainWindow(QMainWindow):
@@ -85,11 +114,17 @@ class MainWindow(QMainWindow):
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
         self.text_edit.textChanged.connect(lambda: self.statusBar.showMessage(f"Nombre de caractères : {len(self.text_edit.toPlainText())}"))
+        self.actions = []
 
         # Définit le widget central de la fenêtre.
-        self.setCentralWidget(self.text_edit)
+        central_widget = QWidget(self)
+        layout = QHBoxLayout(central_widget)
+        layout.addWidget(self.text_edit)
 
-
+        self.word_frequency_widget = WordFrequencyWidget(self)
+        layout.addWidget(self.text_edit)
+        layout.addWidget(self.word_frequency_widget)
+        self.setCentralWidget(central_widget)
 
         search_action = QAction(QIcon(), "Search", self)
         search_action.setShortcut("Ctrl+F")
@@ -150,8 +185,6 @@ class MainWindow(QMainWindow):
         alignR.triggered.connect(lambda : self.text_edit.setAlignment(Qt.AlignRight))
         toolbar.addAction(alignR)
 
-        
-
 
         self.addToolBar(toolbar)
 
@@ -160,6 +193,12 @@ class MainWindow(QMainWindow):
         self.fontBox.valueChanged.connect(self.setFontSize)
         toolbar.addWidget(self.fontBox)
 
+        # Connect the text changed signal to update the word frequency
+        self.text_edit.textChanged.connect(self.update_word_frequency)
+
+    def update_word_frequency(self):
+        text = self.text_edit.toPlainText()
+        self.word_frequency_widget.update_word_frequency(text)
         
 
     def search(self):
@@ -193,6 +232,8 @@ class MainWindow(QMainWindow):
                     cursor.insertText(replace_text)
                     # Recherche l'occurrence suivante du texte recherché
                     cursor = document.find(search_text, cursor)
+        self.text_edit.handle_replace()
+
 
     def toggle_bold(self, boolgras):
         #Transforme le texte en gras (built in dans pyqt)
