@@ -239,6 +239,11 @@ class Canvas(QWidget):
             painter.setOpacity(0.2)
             affiche, form, c = self.selected
             painter.drawRect(form)
+            L = [getattr(form, f)() for f in ["topLeft", "topRight", "bottomLeft", "bottomRight"]]
+            painter.setPen(QPen(Qt.black, 10,  Qt.DashLine))
+            painter.drawPoints(L)
+
+
             # objet sélectionné
             painter.setPen(QPen(Qt.black, 2))
             painter.setOpacity(0.5)
