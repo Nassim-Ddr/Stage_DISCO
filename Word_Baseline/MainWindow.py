@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
         #self.showMaximized()
         self.setFixedSize(800,800)
         self.fontBox = QSpinBox()
-        self.text_edit.setFontPointSize(24)
+
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
         self.text_edit.textChanged.connect(lambda: self.statusBar.showMessage(f"Nombre de caractères : {len(self.text_edit.toPlainText())}"))
@@ -146,6 +146,14 @@ class MainWindow(QMainWindow):
         underline_action.setCheckable(True)
         # slot toggle_underline plus bas
         underline_action.toggled.connect(self.toggle_underline)
+
+        italic_action = QAction(QIcon("./icons/italic.png"), "Italic", self)
+        italic_action.setShortcut("Ctrl+I")
+        italic_action.setCheckable(True)
+        # slot toggle_underline plus bas
+        italic_action.toggled.connect(self.toggle_italic)
+
+
         menu = self.menuBar()
         edit_menu = menu.addMenu("&Operation")
         edit_menu.addAction(search_action)
@@ -153,6 +161,7 @@ class MainWindow(QMainWindow):
         edit_menu.addSeparator()
         edit_menu.addAction(bold_action)
         edit_menu.addAction(underline_action)
+        edit_menu.addAction(italic_action)
 
 
         # On ajoute une toolbar pour mettre en gras et souligner
@@ -169,6 +178,7 @@ class MainWindow(QMainWindow):
 
         toolbar.addAction(bold_action)
         toolbar.addAction(underline_action)
+        toolbar.addAction(italic_action)
 
         toolbar.addSeparator()
 
@@ -185,6 +195,12 @@ class MainWindow(QMainWindow):
         alignR.triggered.connect(lambda : self.text_edit.setAlignment(Qt.AlignRight))
         toolbar.addAction(alignR)
 
+        self.fontTb = QComboBox(self)
+        self.fontTb.addItems(["Arial","Courier Std","Monospace"])
+        self.fontTb.activated.connect(self.setFont)
+        toolbar.addWidget(self.fontTb)
+        self.text_edit.setCurrentFont(QFont("Arial"))
+        self.text_edit.setFontPointSize(24)
 
         self.addToolBar(toolbar)
 
@@ -195,6 +211,8 @@ class MainWindow(QMainWindow):
 
         # Connect the text changed signal to update the word frequency
         self.text_edit.textChanged.connect(self.update_word_frequency)
+        self.text_edit.textChanged.connect(self.setFontSize)
+        self.text_edit.textChanged.connect(self.setFont)
 
     def update_word_frequency(self):
         text = self.text_edit.toPlainText()
@@ -246,6 +264,18 @@ class MainWindow(QMainWindow):
         font = self.text_edit.currentFont()
         font.setUnderline(boolsouligner)
         self.text_edit.setCurrentFont(font)
+
+    def toggle_italic(self, boolita):
+        #Souligne le texte selectionnee 
+        font = self.text_edit.currentFont()
+        font.setItalic(boolita)
+        self.text_edit.setCurrentFont(font)
+
+    
+    def setFont(self):
+        font = self.fontTb.currentText()
+        self.text_edit.setCurrentFont(QFont(font))
+        self.setFontSize()
 
     
     def setFontSize(self):
