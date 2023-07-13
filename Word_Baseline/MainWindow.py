@@ -211,8 +211,6 @@ class MainWindow(QMainWindow):
 
         # Connect the text changed signal to update the word frequency
         self.text_edit.textChanged.connect(self.update_word_frequency)
-        self.text_edit.textChanged.connect(self.setFontSize)
-        self.text_edit.textChanged.connect(self.setFont)
 
     def update_word_frequency(self):
         text = self.text_edit.toPlainText()
