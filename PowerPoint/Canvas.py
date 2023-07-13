@@ -39,10 +39,15 @@ class Canvas(QWidget):
     def addImage(self):
         #print("adding pic")
         # tuple of : (QImage, (x,y))
-        self.pictab.append(())
-        affiche, form, c = "drawRectImage", QRectImage(10, 10, 100, 100, QImage("./zidane.jpg")), Qt.red
+
+        fileName = QFileDialog.getOpenFileName( self,"Open Image", "/home", "Images (*.png *.xpm *.jpg)")[0]
+        if len(fileName)==0:
+            return 
+        affiche, form, c = "drawRectImage", QRectImage(10, 10, 100, 100, QImage(fileName)), Qt.red
         self.Lforms.append((affiche, form, c))
         self.update()
+    
+        
 
 
     def resize(self, cursor):
