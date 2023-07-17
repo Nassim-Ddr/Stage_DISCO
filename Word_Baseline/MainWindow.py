@@ -6,16 +6,22 @@ from PyQt5.QtCore import *
 import signal
 from collections import Counter
 from MapperLog import MapperLog
+from MapperLog2 import MapperLog2
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
     def __init__(self, parent= None):
         super().__init__(parent)
-        self.logger = MapperLog()
+        self.logger = MapperLog2()
 
     def keyPressEvent(self, event):
         # si on appuie sur CTRL
         modifiers = QApplication.keyboardModifiers()
+
+        # appel le comportement par defaut lie a l'evenement
+        cursor = self.textCursor()
+        starting = (cursor.blockNumber(),cursor.columnNumber())
+        super().keyPressEvent(event)
 
         # Les differents comportements
         if event.key() == Qt.Key_Backspace:
@@ -40,9 +46,22 @@ class CustomTextEdit(QTextEdit):
             self.handle_move_cursor_left()
         elif event.key() == Qt.Key_Right and modifiers == Qt.ControlModifier:
             self.handle_move_cursor_right()
+        elif event.key() == Qt.Key_Home:
+            self.handle_move_start_line()
+        elif event.key() == Qt.Key_End:
+            self.handle_move_end_line()
+        elif event.key() == Qt.Key_Right and modifiers == Qt.ShiftModifier:
+            self.handle_selectionR(starting)
+        elif event.key() == Qt.Key_Left and modifiers == Qt.ShiftModifier:
+            self.handle_selectionL(starting)
+        elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Left:
+            self.handle_WordSelectionR(starting)
+        elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Right:
+            self.handle_WordSelectionR(starting)
+        elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
+            self.handle_fullselection(starting)
 
-        # appel le comportement par defaut lie a l'evenement
-        super().keyPressEvent(event)
+        
 
     def handle_copy(self):
         # toPlainText() recupere le texte
@@ -81,9 +100,48 @@ class CustomTextEdit(QTextEdit):
         self.updated("replace")
         print("replace")
 
-    def updated(self, command):
-        self.logger.update(command, (self.toPlainText(),self.textCursor().position()))
+    def updated(self, command,startingPos = (0,0),selection = False):
+        # Si ce n'est pas un commande de selection, on suppose que c'est nulle
+        if not (selection) :
+            endPos = startingPos
+        else :
+            cursor = self.textCursor()
+            endPos = (cursor.blockNumber(),cursor.columnNumber())
+        self.logger.update(command, (self.toPlainText(),cursor.position(),startingPos,endPos))
     
+    def handle_move_start_line(self):
+        print("going to the start of the line")
+
+    def handle_move_end_line(self):
+        print("going to the end of the line")
+    
+    def handle_selectionR(self,startingPos):
+        cursor = self.textCursor()
+        #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
+        self.updated("selectR",startingPos,True)
+
+    def handle_selectionL(self,startingPos):
+        cursor = self.textCursor()
+        #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
+        self.updated("selectL",startingPos,True)
+    
+
+    def handle_WordSelectionR(self,startingPos):
+        cursor = self.textCursor()
+        #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
+
+        #print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
+        self.updated("selectWR",startingPos,True)
+
+    def handle_WordSelectionL(self,startingPos):
+        cursor = self.textCursor()
+        #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
+        self.updated("selectLR",startingPos,True)
+        
+
+    def handle_fullselection(self,startingPos):
+        print("full selection",startingPos)
+
 
 class WordFrequencyWidget(QWidget):
     def __init__(self, parent=None):
@@ -271,9 +329,9 @@ class MainWindow(QMainWindow):
 
     
     def setFont(self):
-        font = self.fontTb.currentText()
-        self.text_edit.setCurrentFont(QFont(font))
-        self.setFontSize()
+        font = self.text_edit.currentFont()
+        font.setFamily(self.fontTb.currentText())
+        self.text_edit.setCurrentFont(font)
 
     
     def setFontSize(self):
@@ -291,3 +349,5 @@ if __name__ == "__main__":
     window.show()
 
     app.exec()
+
+    window.text_edit.logger.file2.close()
