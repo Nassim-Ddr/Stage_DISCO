@@ -8,6 +8,10 @@ from collections import Counter
 from MapperLog import MapperLog
 from MapperLog2 import MapperLog2
 
+from threading import Thread
+import pyautogui
+from time import sleep
+
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
     def __init__(self, parent= None):
@@ -142,7 +146,6 @@ class CustomTextEdit(QTextEdit):
     def handle_fullselection(self,startingPos):
         print("full selection",startingPos)
 
-
 class WordFrequencyWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -156,7 +159,6 @@ class WordFrequencyWidget(QWidget):
         word_count = Counter(text.split())
         self.label.setText("Word Frequency:\n" + "\n".join(f"{word}: {count}" for word, count in word_count.items()))
     
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -337,17 +339,44 @@ class MainWindow(QMainWindow):
     def setFontSize(self):
         val = self.fontBox.value()
         self.text_edit.setFontPointSize(val)
-
-
     
+class WordPlayer() :
+    def __init__(self):
+        app = QApplication(sys.argv)
+        window = MainWindow()
+        window.show()
+        self.app = window
 
+        self.start_player()
+        
+        player_thread = Thread(target=self.player_routine)
+        player_thread.start()
+
+        sys.exit(app.exec_())
+
+
+    def start_player(self) : 
+        print("start player")
+        self.app.text_edit.setText("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.")
+        self.app.text_edit.setFocus()
+
+       
+    
+    def player_routine(self) : 
+        with pyautogui.hold('shift') : 
+            pyautogui.press('right', presses=5)
+        
+
+
+       
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
+    # app = QApplication(sys.argv)
 
-    window = MainWindow()
-    window.show()
+    # window = MainWindow()
+    # window.show()
 
-    app.exec()
+    # app.exec()
 
-    window.text_edit.logger.file2.close()
+    # window.text_edit.logger.file2.close()
+    player = WordPlayer()
