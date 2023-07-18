@@ -3,19 +3,18 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 import numpy as np
 from CanvasTools import *
-from copy import deepcopy
+from Logger import Logger
 
 
 class Canvas(QWidget):
     def __init__(self, parent = None):
         super(Canvas,self).__init__()
         self.parent = parent
+        # configurations du canvas
         self.setMinimumSize(300,300)
-        self.setMouseTracking(True)
-        self.cursorPos = None
-        self.pStart = None
         self.setContentsMargins(10,10,10,10)
-
+        self.setMouseTracking(True)
+        
         # attributs d'affichage
         self.bkcolor = QColor(Qt.blue) # couleur de fond et du contour (par defaut)
         self.width = 3 # taille du contour
@@ -27,11 +26,15 @@ class Canvas(QWidget):
         self.currentTool = "drawRect"
 
         # attributs memoire
-        # liste des figures sur le canvas
-        self.Lforms = [] # liste de tuple (fonction d'affichage, objet, couleur de fond)
+        self.Lforms = []
         self.selection = Selection()
         self.alignTool = AlignTool()
         self.copy = None # figures stocké en copy
+        self.cursorPos = None
+        self.pStart = None
+        
+        # Logger
+        self.logger = Logger('data/data.csv')
     
 
     def addImage(self):
@@ -124,7 +127,25 @@ class Canvas(QWidget):
         self.selection.draw(painter)
 
     def reset(self):
-        print("reset")
+        # attributs d'affichage
+        self.bkcolor = QColor(Qt.blue) # couleur de fond et du contour (par defaut)
+        self.width = 3 # taille du contour
+        self.painterTranslation = QPoint(0,0) # vecteur de translation
+        self.scale = 1 # zoom du canvas
+
+        # attributs mode
+        self.mode = 'draw'
+        self.currentTool = "drawRect"
+
+        # attributs memoire
+        self.Lforms = []
+        self.selection = Selection()
+        self.alignTool = AlignTool()
+        self.copy = None # figures stocké en copy
+        self.cursorPos = None
+        self.pStart = None
+
+        self.logger.prevState = None
 
     def set_color(self, color):
         # On change la couleur de la figure selectionne ou des prochaines figures
@@ -140,15 +161,14 @@ class Canvas(QWidget):
         size = self.size()
         x, y = size.width(), size.height()
         image = QImage(x, y, QImage.Format_ARGB32_Premultiplied)
-        painter = QPainter(image)
+        image.fill(Qt.white)
+        painter = QPainterPlus(image)
+        painter.scale(self.scale, self.scale)
+        painter.translate(self.painterTranslation)
+        # Toutes les figures
         for form in self.Lforms:
             form.draw(painter)
-
-        if self.selection!=None:
-            form = self.selection
-            pen = QPen(Qt.cyan, 2,  Qt.DashLine)
-            painter.setOpacity(0.4)
-            form.draw(painter)
+        painter.end()
         return image
 
 
@@ -260,19 +280,41 @@ class Canvas(QWidget):
         if not self.selection.isEmpty():
             self.alignTool.alignLeft(self.selection.selected)
             self.update()
+            self.logger.update(self.getImage(), 'alignLeft')
 
     def alignRight(self):
         if not self.selection.isEmpty():
             self.alignTool.alignRight(self.selection.selected)
             self.update()
+            self.logger.update(self.getImage(), 'alignRight')
     
     def alignTop(self):
         if not self.selection.isEmpty():
             self.alignTool.alignTop(self.selection.selected)
             self.update()
+            self.logger.update(self.getImage(), 'alignTop')
 
     def alignBottom(self):
         if not self.selection.isEmpty():
             self.alignTool.alignBottom(self.selection.selected)
             self.update()
+            self.logger.update(self.getImage(), 'alignBottom')
     
+    def randomize(self):
+        number = np.random.randint(2, 5)
+        objects = []
+        for rand in np.random.binomial(1, 0.5, number):
+            x1,y1, x2,y2 = np.random.randint(0,300, size=4)
+            r,g,b = np.random.randint(0, 255, size=3)
+            color = QColor(r,g,b)
+            args = (QRect(QPoint(x1,y1), QPoint(x2,y2)), color)
+            figure = QRectPlus(*args) if rand==0 else QEllipse(*args)
+            objects.append(figure)
+        self.Lforms = objects
+        self.selection.clear()
+        self.update()
+        self.logger.prevState = self.getImage()
+
+
+        
+        

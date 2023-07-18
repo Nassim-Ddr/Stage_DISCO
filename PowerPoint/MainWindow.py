@@ -8,10 +8,9 @@ import resources
 class MainWindow(QMainWindow):
     def __init__(self, parent = None ):
         QMainWindow.__init__(self, parent )
-        print( "init mainwindow")
         self.resize(600, 500)
         self.setFocus()
-        
+        self.setWindowTitle("PowerPoint")
 
         self.cont = QWidget(self)
         self.setCentralWidget(self.cont)
@@ -19,6 +18,8 @@ class MainWindow(QMainWindow):
 
         self.textEdit = QTextEdit(self.cont)
         self.textEdit.setReadOnly(True)
+
+        self.setStyleSheet("QMainWindow::titleBar { background-color: red; }")
 
         layout = QVBoxLayout()
         w = QMainWindow()
@@ -28,6 +29,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.textEdit)
 
         bar = self.menuBar()
+        #bar.setStyleSheet("background-color: #b8442c; color: white")
+        bar.resize(600,100)
         # File Menu
         fileMenu = bar.addMenu("File")
         fileMenu.addAction("&Picture", self.canvas.addImage)
@@ -42,11 +45,15 @@ class MainWindow(QMainWindow):
         editMenu.addAction("&Duplicate",  self.canvas.duplicate_element, QKeySequence("Ctrl+D"))
         editMenu.addAction("&Group",  self.canvas.group, QKeySequence("Ctrl+G"))
         editMenu.addAction("&UnGroup",  self.canvas.ungroup, QKeySequence("Ctrl+Shift+G"))
+        editMenu.addAction("&Randomize",  self.canvas.randomize, QKeySequence("Ctrl+R"))
 
+
+        editMenu = bar.addMenu("Organiser")
         editMenu.addAction("&Align Top",  self.canvas.alignTop)
         editMenu.addAction("&Align Right",  self.canvas.alignRight)
         editMenu.addAction("&Align Left",  self.canvas.alignLeft)
         editMenu.addAction("&Align Bottom",  self.canvas.alignBottom)
+
 
         # Menu Color
         colorMenu = bar.addMenu("Color")
@@ -188,11 +195,12 @@ class MainWindow(QMainWindow):
     def save(self):
         self.log_action("Saving canvas")
         image = self.canvas.getImage()
-        image.save('image.png')
+        image.save('image.jpg')
 
     def log_action(self, str):
         content = self.textEdit.toPlainText()
         self.textEdit.setPlainText( content + "\n" + str)
+    
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
@@ -200,3 +208,4 @@ if __name__=="__main__":
     window = MainWindow()
     window.show()
     app.exec_()
+    window.canvas.logger.file.close()
