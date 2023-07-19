@@ -7,25 +7,21 @@ import sys
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+import os
 
 class Logger():
-    def __init__(self, filename = None):
+    def __init__(self, write = False):
         # Variable pour l'ecriture du fichier
-        self.file = filename
-        self.writer = None
-        if self.file is not None:
-            self.file = open(self.file, 'w', newline='')
-            self.writer = csv.writer(self.file)
+        self.write = write
 
         # autres variables
         self.prevState = None
         self.cpt = 0 
         
     def update(self, state, command):
-        if self.file is not None:
+        if self.write:
             image = self.getImage(state)
-            image.save(f'./data/{self.cpt}.jpg')
-            self.writer.writerow([self.cpt, command])
+            image.save(f'./data/{command}/{self.cpt}.jpg')
             self.cpt+= 1
         self.prevState = state
     
@@ -46,6 +42,14 @@ class Player():
     # nb of initial state
     # nb of actions per initial state
     def start(self, actions, start_funtion=lambda: print(None), reset_function=lambda: print(None), call_function=lambda: print(None), parameters=(1000, 1)):
+        directory = 'data'
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        for a in actions:
+            if not os.path.exists(f'data/{a.__name__}'):
+                os.makedirs(f'data/{a.__name__}')
+
+
         iter_max, nb_act = parameters 
         i = 0
         while i < iter_max:
@@ -72,7 +76,6 @@ if __name__ == '__main__':
         canvas.selection.selected = canvas.Lforms
     player = Player()
     player.start(actions, canvas.randomize, canvas.reset, call_function, parameters=(10,1))
-    canvas.logger.file.close()
         
 
 
