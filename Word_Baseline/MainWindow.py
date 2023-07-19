@@ -11,17 +11,28 @@ from MapperLog2 import MapperLog2
 from threading import Thread
 import pyautogui
 from time import sleep
+from PyQt5.QtTest import QTest
+import numpy as np
+
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
     def __init__(self, parent= None):
         super().__init__(parent)
         self.logger = MapperLog2()
+        self.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
+        text_length = len(self.toPlainText())
+        mid = text_length//2
+        cursor = self.textCursor()
+        cursor.setPosition(mid,QTextCursor.MoveAnchor)
+
+        # Fait en sorte que le cursor soit bien au milieu
+        self.setTextCursor(cursor)
+        self.ensureCursorVisible()
 
     def keyPressEvent(self, event):
         # si on appuie sur CTRL
         modifiers = QApplication.keyboardModifiers()
-
         # appel le comportement par defaut lie a l'evenement
         cursor = self.textCursor()
         starting = (cursor.blockNumber(),cursor.columnNumber())
@@ -64,6 +75,8 @@ class CustomTextEdit(QTextEdit):
             self.handle_WordSelectionR(starting)
         elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
             self.handle_fullselection(starting)
+        elif event.key() == Qt.Key_Tab :
+            self.handle_tab()
 
         
 
@@ -106,10 +119,11 @@ class CustomTextEdit(QTextEdit):
 
     def updated(self, command,startingPos = (0,0),selection = False):
         # Si ce n'est pas un commande de selection, on suppose que c'est nulle
+        cursor = self.textCursor()
         if not (selection) :
             endPos = startingPos
         else :
-            cursor = self.textCursor()
+            
             endPos = (cursor.blockNumber(),cursor.columnNumber())
         self.logger.update(command, (self.toPlainText(),cursor.position(),startingPos,endPos))
     
@@ -134,7 +148,7 @@ class CustomTextEdit(QTextEdit):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
 
-        #print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
+        print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
         self.updated("selectWR",startingPos,True)
 
     def handle_WordSelectionL(self,startingPos):
@@ -144,7 +158,13 @@ class CustomTextEdit(QTextEdit):
         
 
     def handle_fullselection(self,startingPos):
+        cursor = self.textCursor()
+        self.updated("selectAll",startingPos,True)
         print("full selection",startingPos)
+    
+    def handle_tab(self):
+        self.updated("tabbing")
+
 
 class WordFrequencyWidget(QWidget):
     def __init__(self, parent=None):
@@ -339,44 +359,70 @@ class MainWindow(QMainWindow):
     def setFontSize(self):
         val = self.fontBox.value()
         self.text_edit.setFontPointSize(val)
-    
-class WordPlayer() :
-    def __init__(self):
-        app = QApplication(sys.argv)
-        window = MainWindow()
-        window.show()
-        self.app = window
-
-        self.start_player()
         
-        player_thread = Thread(target=self.player_routine)
-        player_thread.start()
-
-        sys.exit(app.exec_())
-
-
-    def start_player(self) : 
-        print("start player")
-        self.app.text_edit.setText("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.")
-        self.app.text_edit.setFocus()
-
-       
     
-    def player_routine(self) : 
-        with pyautogui.hold('shift') : 
-            pyautogui.press('right', presses=5)
+
+
+def reset(texteditor):
+
+    texteditor.clear()
+    texteditor.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
+    text_length = len(texteditor.toPlainText())
+
+    mid = text_length//2
+
+    cursor = texteditor.textCursor()
+    cursor.setPosition(mid,QTextCursor.MoveAnchor)
+
+    texteditor.setTextCursor(cursor)
+    texteditor.ensureCursorVisible()
+
+def useAct(action,app):
+    match action:
+        case "SelectWR":
+            QTest.keyPress(app, Qt.Key_Right, Qt.ControlModifier | Qt.ShiftModifier)
+        case "SelectWL":
+            QTest.keyPress(app, Qt.Key_Left, Qt.ControlModifier | Qt.ShiftModifier)
+        case "SelectShiftR":
+            QTest.keyPress(app, Qt.Key_Right,  Qt.ShiftModifier)
+        case "SelectShiftL":
+            QTest.keyPress(app, Qt.Key_Left,  Qt.ShiftModifier)
+        case "MoveWR":
+            QTest.keyPress(app, Qt.Key_Right,  Qt.ControlModifier)
+        case "MoveWL":
+            QTest.keyPress(app, Qt.Key_Left,  Qt.ControlModifier)
+        case "MoveHome":
+            QTest.keyPress(app, Qt.Key_Home)
+        case "MoveEnd":
+            QTest.keyPress(app, Qt.Key_End)
+        case "Tab":
+            QTest.keyPress(app,Qt.Key_Tab)
+        case "SelectAll":
+            QTest.keyPress(app,Qt.Key_A,  Qt.ControlModifier)
         
 
+def play(texteditor,commandList,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 1000,moves = 3):
 
-       
+    for i in range(epochs):
+        for j in range(moves):
+            act = np.random.choice(actions)
+            useAct(act,texteditor)
+        reset(texteditor)
+
 
 if __name__ == "__main__":
-    # app = QApplication(sys.argv)
+    app = QApplication(sys.argv)
 
-    # window = MainWindow()
-    # window.show()
+    window = MainWindow()
+    window.show()
+    actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
 
-    # app.exec()
+    play(window.text_edit,actions,reset_function=reset)
 
-    # window.text_edit.logger.file2.close()
-    player = WordPlayer()
+    app.exec()
+
+    window.text_edit.logger.file2.close()
+    #player = WordPlayer()
+    #self.player.app.text_edit.logger.file2.close()
+    #self.player.app.text_edit.logger.file.close()
+    
