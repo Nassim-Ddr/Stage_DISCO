@@ -58,13 +58,13 @@ class CustomTextEdit(QTextEdit):
         elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
             self.handle_bold()
         elif event.key() == Qt.Key_Left and modifiers == Qt.ControlModifier:
-            self.handle_move_cursor_left()
+            self.handle_move_cursor_left(starting)
         elif event.key() == Qt.Key_Right and modifiers == Qt.ControlModifier:
-            self.handle_move_cursor_right()
+            self.handle_move_cursor_right(starting)
         elif event.key() == Qt.Key_Home:
-            self.handle_move_start_line()
+            self.handle_move_start_line(starting)
         elif event.key() == Qt.Key_End:
-            self.handle_move_end_line()
+            self.handle_move_end_line(starting)
         elif event.key() == Qt.Key_Right and modifiers == Qt.ShiftModifier:
             self.handle_selectionR(starting)
         elif event.key() == Qt.Key_Left and modifiers == Qt.ShiftModifier:
@@ -76,7 +76,7 @@ class CustomTextEdit(QTextEdit):
         elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
             self.handle_fullselection(starting)
         elif event.key() == Qt.Key_Tab :
-            self.handle_tab()
+            self.handle_tab(starting)
 
         
 
@@ -103,45 +103,37 @@ class CustomTextEdit(QTextEdit):
     def handle_redo(self):
         print("Annulay dans l'autre sens")
 
-    def handle_move_cursor_left(self):
+    def handle_move_cursor_left(self,startingPos):
         #print(self.textCursor().position())
-        print("je vais a gauche")
-        self.updated("moveL")
+        print("je vais a gauche ",self.textCursor().position())
+        self.updated("moveL",startingPos)
 
-    def handle_move_cursor_right(self):
+    def handle_move_cursor_right(self,startingPos):
         #print(self.textCursor().position())
-        print("je vais à droite")
-        self.updated("moveR")
+        print("je vais à droite ",self.textCursor().position())
+        self.updated("moveR",startingPos)
     
-    def handle_replace(self):
-        self.updated("replace")
+    def handle_replace(self,startingPos):
+        self.updated("replace",startingPos)
         print("replace")
-
-    def updated(self, command,startingPos = (0,0),selection = False):
-        # Si ce n'est pas un commande de selection, on suppose que c'est nulle
-        cursor = self.textCursor()
-        if not (selection) :
-            endPos = startingPos
-        else :
-            
-            endPos = (cursor.blockNumber(),cursor.columnNumber())
-        self.logger.update(command, (self.toPlainText(),cursor.position(),startingPos,endPos))
     
-    def handle_move_start_line(self):
+    def handle_move_start_line(self,startingPos):
         print("going to the start of the line")
+        self.updated("moveSLine",startingPos)
 
-    def handle_move_end_line(self):
+    def handle_move_end_line(self,startingPos):
         print("going to the end of the line")
+        self.updated("moveELine",startingPos)
     
     def handle_selectionR(self,startingPos):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("selectR",startingPos,True)
+        self.updated("selectR",startingPos)
 
     def handle_selectionL(self,startingPos):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("selectL",startingPos,True)
+        self.updated("selectL",startingPos)
     
 
     def handle_WordSelectionR(self,startingPos):
@@ -149,21 +141,26 @@ class CustomTextEdit(QTextEdit):
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
 
         print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
-        self.updated("selectWR",startingPos,True)
+        self.updated("selectWR",startingPos)
 
     def handle_WordSelectionL(self,startingPos):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("selectLR",startingPos,True)
+        self.updated("selectLR",startingPos)
         
 
     def handle_fullselection(self,startingPos):
         cursor = self.textCursor()
-        self.updated("selectAll",startingPos,True)
-        print("full selection",startingPos)
+        self.updated("selectAll",startingPos)
+        #print("full selection",startingPos)
     
-    def handle_tab(self):
-        self.updated("tabbing")
+    def handle_tab(self,startingPos):
+        self.updated("tabbing",startingPos)
+    
+    def updated(self, command,startingPos):
+        cursor = self.textCursor()
+        endPos = (cursor.blockNumber(),cursor.columnNumber())
+        self.logger.update(command, (self.toPlainText(),cursor.position(),startingPos,endPos))
 
 
 class WordFrequencyWidget(QWidget):
@@ -369,13 +366,15 @@ def reset(texteditor):
     texteditor.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
     text_length = len(texteditor.toPlainText())
 
-    mid = text_length//2
+    position = np.random.randint(text_length)
 
     cursor = texteditor.textCursor()
-    cursor.setPosition(mid,QTextCursor.MoveAnchor)
+    cursor.setPosition(position,QTextCursor.MoveAnchor)
 
     texteditor.setTextCursor(cursor)
     texteditor.ensureCursorVisible()
+    texteditor.logger.reset()
+
 
 def useAct(action,app):
     match action:
@@ -399,9 +398,12 @@ def useAct(action,app):
             QTest.keyPress(app,Qt.Key_Tab)
         case "SelectAll":
             QTest.keyPress(app,Qt.Key_A,  Qt.ControlModifier)
+    
+    QTest.keyPress(app,Qt.Key_Left)
+    QTest.keyPress(app,Qt.Key_Right)
         
 
-def play(texteditor,commandList,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 1000,moves = 3):
+def play(texteditor,commandList,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 1000,moves = 20):
 
     for i in range(epochs):
         for j in range(moves):
@@ -415,8 +417,9 @@ if __name__ == "__main__":
 
     window = MainWindow()
     window.show()
-    actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
-
+    #actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
+    actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","SelectAll"]
+    #actions = ["MoveWR","MoveWL","MoveHome","MoveEnd"]
     play(window.text_edit,actions,reset_function=reset)
 
     app.exec()
