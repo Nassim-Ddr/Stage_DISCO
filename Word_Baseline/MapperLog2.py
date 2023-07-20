@@ -44,9 +44,6 @@ class MapperLog2():
         line2, column2 = cursorEnd
 
 
-
-        
-
         treated = self.vectorizer.transform([text]).toarray()[0]
         treatedPos = np.array([cursorPos, line1,column1,line2,column2]).astype(int)
         #print(treated)

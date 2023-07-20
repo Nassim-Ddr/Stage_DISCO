@@ -13,6 +13,8 @@ import pyautogui
 from time import sleep
 from PyQt5.QtTest import QTest
 import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer
+import pandas as pd
 
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
@@ -39,8 +41,8 @@ class CustomTextEdit(QTextEdit):
         super().keyPressEvent(event)
 
         # Les differents comportements
-        if event.key() == Qt.Key_Backspace:
-            self.handle_backspace()
+        if event.key() == Qt.Key_Backspace and modifiers == Qt.ControlModifier:
+            self.handle_backspace(starting)
         elif event.key() == Qt.Key_Delete:
             self.handle_delete()
         elif event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
@@ -85,8 +87,9 @@ class CustomTextEdit(QTextEdit):
         #print(self.toPlainText())
         print("J'ai copié")
 
-    def handle_backspace(self):
-        print("Supprimer le caractere")
+    def handle_backspace(self,startingPos):
+        #print("Supprimer le mot")
+        self.updated("delWord",startingPos)
 
     def handle_delete(self):
         print("Supprimer ?")
@@ -325,7 +328,7 @@ class MainWindow(QMainWindow):
                     cursor.insertText(replace_text)
                     # Recherche l'occurrence suivante du texte recherché
                     cursor = document.find(search_text, cursor)
-        self.text_edit.handle_replace()
+        self.text_edit.handle_replace(starting)
     
     def replacePlayer(self,searchT,replaceT):
         # Demande à l'utilisateur d'entrer le texte à remplacer (Toujours QInputDialog)
@@ -343,7 +346,8 @@ class MainWindow(QMainWindow):
                     cursor.insertText(replace_text)
                     # Recherche l'occurrence suivante du texte recherché
                     cursor = document.find(search_text, cursor)
-        self.text_edit.handle_replace()
+        starting = (cursor.blockNumber(),cursor.columnNumber())
+        self.text_edit.handle_replace(starting)
 
 
     def toggle_bold(self, boolgras):
@@ -395,7 +399,7 @@ def reset(texteditor):
 
 
 def get_dict():
-    my_data = np.genfromtxt('data\word-freq-top5000.csv', delimiter=',', skip_header=True)[:,2]
+    my_data = pd.read_csv('data\word-freq-top5000.csv', delimiter=',', usecols=[1]).to_numpy()[:,0]
     return my_data
 
 def useAct(action,app,window):
@@ -442,14 +446,21 @@ def useAct(action,app,window):
             window.replacePlayer(toreplace,replaced)
 
 
-    
-    QTest.keyPress(app,Qt.Key_Left)
-    QTest.keyPress(app,Qt.Key_Right)
+    cursor = app.textCursor()
+    cursor.clearSelection()
+    app.setTextCursor(cursor)
+
 
 
 
 
 def play(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 500,moves = 20):
+
+    for i in range(epochs):
+        for j in range(moves):
+            act = np.random.choice(commandList3)
+            useAct(act,texteditor,window)
+        reset(texteditor)
 
     for i in range(epochs):
         for j in range(moves):
@@ -463,11 +474,7 @@ def play(texteditor,window,commandList1,commandList2,commandList3,start_funtion=
             useAct(act,texteditor,window)
         reset(texteditor)
     
-    for i in range(epochs):
-        for j in range(moves):
-            act = np.random.choice(commandList3)
-            useAct(act,texteditor,window)
-        reset(texteditor)
+    
 
 
 if __name__ == "__main__":

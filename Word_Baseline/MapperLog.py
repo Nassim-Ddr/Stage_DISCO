@@ -24,6 +24,7 @@ class MapperLog():
             self.writer = csv.writer(self.file)
         self.onWrite = write
 
+    
     # call this func when something is updated into the texteditor
     def update(self,command,state):
 
