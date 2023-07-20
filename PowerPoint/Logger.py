@@ -10,20 +10,25 @@ from PyQt5.QtCore import *
 import os
 
 class Logger():
-    def __init__(self, write = False):
+    def __init__(self, write = False, recommender = None):
         # Variable pour l'ecriture du fichier
         self.write = write
 
         # autres variables
         self.prevState = None
         self.cpt = 0 
+        self.recommender = recommender
         
     def update(self, state, command):
+        if self.recommender is not None:
+            self.recommender.update(state)
+            return
         if self.write:
             image = self.getImage(state)
             image.save(f'./data/{command}/{self.cpt}.jpg')
             self.cpt+= 1
         self.prevState = state
+        
     
     def getImage(self, image):
         image1 = self.prevState

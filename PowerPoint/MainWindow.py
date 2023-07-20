@@ -3,6 +3,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from Canvas import *
+from Recommender import *
 import resources
 
 class MainWindow(QMainWindow):
@@ -204,8 +205,13 @@ class MainWindow(QMainWindow):
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
-
+    # Logiciel PowerPoint
     window = MainWindow()
     window.show()
+    # Recommender
+    R = Recommender("models/model")
+    window.canvas.logger.recommender = R
+    R.show()
+
     app.exec_()
     window.canvas.logger.file.close()
