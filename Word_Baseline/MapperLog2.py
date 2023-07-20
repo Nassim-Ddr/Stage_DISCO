@@ -28,6 +28,10 @@ class MapperLog2():
             self.writer = csv.writer(self.file)
 
         self.onWrite = write
+    
+    def reset(self):
+        self.curState=None
+        self.curPosState=None
 
     # call this func when something is updated into the texteditor
     def update(self,command,state):
@@ -39,9 +43,6 @@ class MapperLog2():
 
         line2, column2 = cursorEnd
 
-
-
-        
 
         treated = self.vectorizer.transform([text]).toarray()[0]
         treatedPos = np.array([cursorPos, line1,column1,line2,column2]).astype(int)
