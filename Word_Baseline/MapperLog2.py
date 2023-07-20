@@ -28,6 +28,10 @@ class MapperLog2():
             self.writer = csv.writer(self.file)
 
         self.onWrite = write
+    
+    def reset(self):
+        self.curState=None
+        self.curPosState=None
 
     # call this func when something is updated into the texteditor
     def update(self,command,state):

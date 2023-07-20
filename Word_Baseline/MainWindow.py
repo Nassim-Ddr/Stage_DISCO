@@ -326,6 +326,24 @@ class MainWindow(QMainWindow):
                     # Recherche l'occurrence suivante du texte recherché
                     cursor = document.find(search_text, cursor)
         self.text_edit.handle_replace()
+    
+    def replacePlayer(self,searchT,replaceT):
+        # Demande à l'utilisateur d'entrer le texte à remplacer (Toujours QInputDialog)
+        search_text, ok = searchT, True
+        if ok:
+            # Demande à l'utilisateur d'entrer le texte de remplacement 
+            replace_text, ok = replaceT, True
+            if ok:
+                document = self.text_edit.document()
+                # Recherche la première occurrence du texte recherché dans le widget d'édition de texte
+                # Toutes les occurrences seront remplacees
+                cursor = document.find(search_text)
+                while not cursor.isNull():
+                    # Remplace l'élément par le nouveau texte
+                    cursor.insertText(replace_text)
+                    # Recherche l'occurrence suivante du texte recherché
+                    cursor = document.find(search_text, cursor)
+        self.text_edit.handle_replace()
 
 
     def toggle_bold(self, boolgras):
@@ -376,7 +394,12 @@ def reset(texteditor):
     texteditor.logger.reset()
 
 
-def useAct(action,app):
+def get_dict():
+    my_data = np.genfromtxt('data\word-freq-top5000.csv', delimiter=',', skip_header=True)[:,2]
+    return my_data
+
+def useAct(action,app,window):
+    dico = get_dict()
     match action:
         case "SelectWR":
             QTest.keyPress(app, Qt.Key_Right, Qt.ControlModifier | Qt.ShiftModifier)
@@ -398,17 +421,52 @@ def useAct(action,app):
             QTest.keyPress(app,Qt.Key_Tab)
         case "SelectAll":
             QTest.keyPress(app,Qt.Key_A,  Qt.ControlModifier)
+        case "WordDel":
+            QTest.keyPress(app,Qt.Key_Backspace, Qt.ControlModifier)
+        case "Replace":
+            text = app.toPlainText()
+            vectorizer = CountVectorizer()
+
+            # Fit transform
+            vectorizer.fit_transform([text])
+
+            # Get names
+            replaceable = vectorizer.get_feature_names_out()
+
+            # the word to replace
+            toreplace = np.random.choice(replaceable)
+
+            # the replacing word
+            replaced = np.random.choice(dico)
+
+            window.replacePlayer(toreplace,replaced)
+
+
     
     QTest.keyPress(app,Qt.Key_Left)
     QTest.keyPress(app,Qt.Key_Right)
-        
 
-def play(texteditor,commandList,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 1000,moves = 20):
+
+
+
+def play(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 500,moves = 20):
 
     for i in range(epochs):
         for j in range(moves):
-            act = np.random.choice(actions)
-            useAct(act,texteditor)
+            act = np.random.choice(commandList1)
+            useAct(act,texteditor,window)
+        reset(texteditor)
+
+    for i in range(epochs):
+        for j in range(moves):
+            act = np.random.choice(commandList2)
+            useAct(act,texteditor,window)
+        reset(texteditor)
+    
+    for i in range(epochs):
+        for j in range(moves):
+            act = np.random.choice(commandList3)
+            useAct(act,texteditor,window)
         reset(texteditor)
 
 
@@ -418,9 +476,10 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     #actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
-    actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","SelectAll"]
-    #actions = ["MoveWR","MoveWL","MoveHome","MoveEnd"]
-    play(window.text_edit,actions,reset_function=reset)
+    actionsSel = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","SelectAll"]
+    actionsMove = ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab"]
+    actionsWord = ["WordDel","Replace"]
+    play(window.text_edit,window,actionsSel,actionsMove,actionsWord,reset_function=reset)
 
     app.exec()
 
