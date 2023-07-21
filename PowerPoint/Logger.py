@@ -79,6 +79,7 @@ if __name__ == '__main__':
     ]
     def call_function():
         canvas.selection.selected = canvas.Lforms
+    canvas.logger.write = True
     player = Player()
     player.start(actions, canvas.randomize, canvas.reset, call_function, parameters=(10,1))
         
