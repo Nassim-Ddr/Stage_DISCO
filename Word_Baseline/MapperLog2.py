@@ -8,12 +8,13 @@ from sklearn.feature_extraction.text import CountVectorizer
 
 # Ce logger concerne les classifieurs séparés (avec le classifieur de selection et le classifieur de Bow) ainsi que le classifieur hard codé.
 class MapperLog2():
-    def __init__(self,write = True):
+    def __init__(self,write = True,assistant=None):
         self.curState=None
         self.curPosState=None
         self.vectorizer = CountVectorizer()
         my_data = pd.read_csv('data\word-freq-top5000.csv', delimiter=',', usecols=[1]).to_numpy()[:,0]
-        self.vectorizer.fit_transform(my_data)
+        my_data = np.unique(my_data)
+        self.vectorizer.fit_transform(my_data[0:1300])
 
         # labels = commands
         # textHistory = pair of states
@@ -28,6 +29,7 @@ class MapperLog2():
             self.writer = csv.writer(self.file)
 
         self.onWrite = write
+        self.assistant = assistant
     
     def reset(self):
         self.curState=None
@@ -37,19 +39,20 @@ class MapperLog2():
     def update(self,command,state):
 
         # format :
-        text, cursorPos, cursorStart, cursorEnd = state
+        text, cursorPos, cursorStart, cursorEnd, selStart,selEnd = state
 
         line1, column1 = cursorStart
 
         line2, column2 = cursorEnd
 
 
+
         treated = self.vectorizer.transform([text]).toarray()[0]
-        treatedPos = np.array([cursorPos, line1,column1,line2,column2]).astype(int)
+        treatedPos = np.array([cursorPos, line1,column1,line2,column2,selStart,selEnd]).astype(int)
         #print(treated)
 
 
-        if self.curState is None :
+        if self.curState is None or self.curPosState is None :
             self.curState=treated
             self.curPosState=treatedPos
             return 
@@ -64,6 +67,9 @@ class MapperLog2():
         # change the current data
         self.curState = treated
         self.curPosState=treatedPos
+
+        if not (self.onWrite):
+            self.assistant.update( (np.hstack((treated, treatedPos)),command) )
     
 
 def bag_of_words(text):
