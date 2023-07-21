@@ -13,13 +13,19 @@ import pyautogui
 from time import sleep
 from PyQt5.QtTest import QTest
 import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer
+import pandas as pd
+from Recommender import *
+import torch
+from torch import nn
+import torch.nn.functional as F
 
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
     def __init__(self, parent= None):
         super().__init__(parent)
-        self.logger = MapperLog2()
+        self.logger = MapperLog2(False)
         self.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
         text_length = len(self.toPlainText())
         mid = text_length//2
@@ -36,11 +42,12 @@ class CustomTextEdit(QTextEdit):
         # appel le comportement par defaut lie a l'evenement
         cursor = self.textCursor()
         starting = (cursor.blockNumber(),cursor.columnNumber())
+        print("before : ", starting)
         super().keyPressEvent(event)
 
         # Les differents comportements
-        if event.key() == Qt.Key_Backspace:
-            self.handle_backspace()
+        if event.key() == Qt.Key_Backspace and modifiers == Qt.ControlModifier:
+            self.handle_backspace(starting)
         elif event.key() == Qt.Key_Delete:
             self.handle_delete()
         elif event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
@@ -58,13 +65,13 @@ class CustomTextEdit(QTextEdit):
         elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
             self.handle_bold()
         elif event.key() == Qt.Key_Left and modifiers == Qt.ControlModifier:
-            self.handle_move_cursor_left()
+            self.handle_move_cursor_left(starting)
         elif event.key() == Qt.Key_Right and modifiers == Qt.ControlModifier:
-            self.handle_move_cursor_right()
+            self.handle_move_cursor_right(starting)
         elif event.key() == Qt.Key_Home:
-            self.handle_move_start_line()
+            self.handle_move_start_line(starting)
         elif event.key() == Qt.Key_End:
-            self.handle_move_end_line()
+            self.handle_move_end_line(starting)
         elif event.key() == Qt.Key_Right and modifiers == Qt.ShiftModifier:
             self.handle_selectionR(starting)
         elif event.key() == Qt.Key_Left and modifiers == Qt.ShiftModifier:
@@ -76,7 +83,7 @@ class CustomTextEdit(QTextEdit):
         elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
             self.handle_fullselection(starting)
         elif event.key() == Qt.Key_Tab :
-            self.handle_tab()
+            self.handle_tab(starting)
 
         
 
@@ -85,8 +92,9 @@ class CustomTextEdit(QTextEdit):
         #print(self.toPlainText())
         print("J'ai copié")
 
-    def handle_backspace(self):
-        print("Supprimer le caractere")
+    def handle_backspace(self,startingPos):
+        #print("Supprimer le mot")
+        self.updated("delWord",startingPos)
 
     def handle_delete(self):
         print("Supprimer ?")
@@ -103,45 +111,37 @@ class CustomTextEdit(QTextEdit):
     def handle_redo(self):
         print("Annulay dans l'autre sens")
 
-    def handle_move_cursor_left(self):
+    def handle_move_cursor_left(self,startingPos):
         #print(self.textCursor().position())
-        print("je vais a gauche")
-        self.updated("moveL")
+        #print("je vais a gauche ",self.textCursor().position())
+        self.updated("moveL",startingPos)
 
-    def handle_move_cursor_right(self):
+    def handle_move_cursor_right(self,startingPos):
         #print(self.textCursor().position())
-        print("je vais à droite")
-        self.updated("moveR")
+        #print("je vais à droite ",self.textCursor().position())
+        self.updated("moveR",startingPos)
     
-    def handle_replace(self):
-        self.updated("replace")
+    def handle_replace(self,startingPos):
+        self.updated("replace",startingPos)
         print("replace")
-
-    def updated(self, command,startingPos = (0,0),selection = False):
-        # Si ce n'est pas un commande de selection, on suppose que c'est nulle
-        cursor = self.textCursor()
-        if not (selection) :
-            endPos = startingPos
-        else :
-            
-            endPos = (cursor.blockNumber(),cursor.columnNumber())
-        self.logger.update(command, (self.toPlainText(),cursor.position(),startingPos,endPos))
     
-    def handle_move_start_line(self):
-        print("going to the start of the line")
+    def handle_move_start_line(self,startingPos):
+        #print("going to the start of the line")
+        self.updated("moveSLine",startingPos)
 
-    def handle_move_end_line(self):
-        print("going to the end of the line")
+    def handle_move_end_line(self,startingPos):
+        #print("going to the end of the line")
+        self.updated("moveELine",startingPos)
     
     def handle_selectionR(self,startingPos):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("selectR",startingPos,True)
+        #self.updated("selectR",startingPos)
 
     def handle_selectionL(self,startingPos):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("selectL",startingPos,True)
+        #self.updated("selectL",startingPos)
     
 
     def handle_WordSelectionR(self,startingPos):
@@ -149,21 +149,31 @@ class CustomTextEdit(QTextEdit):
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
 
         print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
-        self.updated("selectWR",startingPos,True)
+        self.updated("selectWR",startingPos)
 
     def handle_WordSelectionL(self,startingPos):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("selectLR",startingPos,True)
+        self.updated("selectLR",startingPos)
         
 
     def handle_fullselection(self,startingPos):
         cursor = self.textCursor()
-        self.updated("selectAll",startingPos,True)
-        print("full selection",startingPos)
+        #print("full selection",startingPos)
+        
+        self.updated("selectAll",startingPos)
+        #print("after : ",cursor.blockNumber(),cursor.columnNumber())
+        
     
-    def handle_tab(self):
-        self.updated("tabbing")
+    def handle_tab(self,startingPos):
+        self.updated("tabbing",startingPos)
+    
+    def updated(self, command,startingPos):
+        cursor = self.textCursor()
+        endPos = (cursor.blockNumber(),cursor.columnNumber())
+        startSel = cursor.selectionStart()
+        endSel = cursor.selectionEnd()
+        self.logger.update(command, (self.toPlainText(),cursor.position(),startingPos,endPos,startSel,endSel))
 
 
 class WordFrequencyWidget(QWidget):
@@ -328,7 +338,27 @@ class MainWindow(QMainWindow):
                     cursor.insertText(replace_text)
                     # Recherche l'occurrence suivante du texte recherché
                     cursor = document.find(search_text, cursor)
-        self.text_edit.handle_replace()
+        starting = (cursor.blockNumber(),cursor.columnNumber())
+        self.text_edit.handle_replace(starting)
+    
+    def replacePlayer(self,searchT,replaceT):
+        # Demande à l'utilisateur d'entrer le texte à remplacer (Toujours QInputDialog)
+        search_text, ok = searchT, True
+        if ok:
+            # Demande à l'utilisateur d'entrer le texte de remplacement 
+            replace_text, ok = replaceT, True
+            if ok:
+                document = self.text_edit.document()
+                # Recherche la première occurrence du texte recherché dans le widget d'édition de texte
+                # Toutes les occurrences seront remplacees
+                cursor = document.find(search_text)
+                while not cursor.isNull():
+                    # Remplace l'élément par le nouveau texte
+                    cursor.insertText(replace_text)
+                    # Recherche l'occurrence suivante du texte recherché
+                    cursor = document.find(search_text, cursor)
+        starting = (cursor.blockNumber(),cursor.columnNumber())
+        self.text_edit.handle_replace(starting)
 
 
     def toggle_bold(self, boolgras):
@@ -369,15 +399,22 @@ def reset(texteditor):
     texteditor.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
     text_length = len(texteditor.toPlainText())
 
-    mid = text_length//2
+    position = np.random.randint(text_length)
 
     cursor = texteditor.textCursor()
-    cursor.setPosition(mid,QTextCursor.MoveAnchor)
+    cursor.setPosition(position,QTextCursor.MoveAnchor)
 
     texteditor.setTextCursor(cursor)
     texteditor.ensureCursorVisible()
+    texteditor.logger.reset()
 
-def useAct(action,app):
+
+def get_dict():
+    my_data = pd.read_csv('data\word-freq-top5000.csv', delimiter=',', usecols=[1]).to_numpy()[:,0]
+    return my_data
+
+def useAct(action,app,window):
+    dico = get_dict()
     match action:
         case "SelectWR":
             QTest.keyPress(app, Qt.Key_Right, Qt.ControlModifier | Qt.ShiftModifier)
@@ -399,15 +436,56 @@ def useAct(action,app):
             QTest.keyPress(app,Qt.Key_Tab)
         case "SelectAll":
             QTest.keyPress(app,Qt.Key_A,  Qt.ControlModifier)
-        
+        case "WordDel":
+            QTest.keyPress(app,Qt.Key_Backspace, Qt.ControlModifier)
+        case "Replace":
+            text = app.toPlainText()
+            vectorizer = CountVectorizer()
 
-def play(texteditor,commandList,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 1000,moves = 3):
+            # Fit transform
+            vectorizer.fit_transform([text])
+
+            # Get names
+            replaceable = vectorizer.get_feature_names_out()
+
+            # the word to replace
+            toreplace = np.random.choice(replaceable)
+
+            # the replacing word
+            replaced = np.random.choice(dico)
+
+            window.replacePlayer(toreplace,replaced)
+
+
+    cursor = app.textCursor()
+    cursor.clearSelection()
+    app.setTextCursor(cursor)
+
+
+
+
+
+def play(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 500,moves = 12):
 
     for i in range(epochs):
         for j in range(moves):
-            act = np.random.choice(actions)
-            useAct(act,texteditor)
+            act = np.random.choice(commandList3)
+            useAct(act,texteditor,window)
         reset(texteditor)
+
+    for i in range(epochs):
+        for j in range(moves):
+            act = np.random.choice(commandList1)
+            useAct(act,texteditor,window)
+        reset(texteditor)
+
+    for i in range(epochs):
+        for j in range(moves):
+            act = np.random.choice(commandList2)
+            useAct(act,texteditor,window)
+        reset(texteditor)
+    
+    
 
 
 if __name__ == "__main__":
@@ -415,13 +493,19 @@ if __name__ == "__main__":
 
     window = MainWindow()
     window.show()
-    actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
-
-    play(window.text_edit,actions,reset_function=reset)
+    R = Recommender("./models/model")
+    window.text_edit.logger.assistant = R
+    R.show()
+    #actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
+    actionsSel = ["SelectWR","SelectWL","SelectAll"]
+    actionsMove = ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab"]
+    actionsWord = ["WordDel","Replace"]
+    #play(window.text_edit,window,actionsSel,actionsMove,actionsWord,reset_function=reset)
 
     app.exec()
 
-    window.text_edit.logger.file2.close()
+    #window.text_edit.logger.file2.close()
+    #window.text_edit.logger.file.close()
     #player = WordPlayer()
     #self.player.app.text_edit.logger.file2.close()
     #self.player.app.text_edit.logger.file.close()
