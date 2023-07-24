@@ -58,12 +58,16 @@ class Canvas(QWidget):
         # On selectionne une figure
         elif self.mode == 'select':
             p = event.pos()/self.scale - self.painterTranslation
-            if QApplication.keyboardModifiers() != Qt.ShiftModifier:
+            if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+                self.selection.toogleSelect(self.Lforms,p)
+            elif  QApplication.keyboardModifiers() == Qt.ControlModifier:
+                self.selection.toogleSelect(self.Lforms,p)
+                self.copy_element()
+            else:    
                 self.selection.clear()
-            if not self.selection.toogleSelect(self.Lforms,p): 
-                self.selection.clear()
+                self.selection.toogleSelect(self.Lforms,p)
+
             self.pStart = (event.pos()/self.scale - self.painterTranslation)
-            self.update()
         # On dessine
         else:
             self.pStart = (self.cursorPos/self.scale - self.painterTranslation)
@@ -77,6 +81,7 @@ class Canvas(QWidget):
                             
     def mouseMoveEvent(self, event):
         if self.pStart != None:
+            #print("ok")
             # Si le canvas est deplace, il faut recentre le curseur
             oldV = (self.cursorPos - self.pStart)
             self.cursorPos = event.pos()
@@ -99,6 +104,8 @@ class Canvas(QWidget):
             
             elif self.mode == 'select':
                 self.cursorPos= (self.cursorPos/self.scale - self.painterTranslation)
+                self.paste_element((0,0))
+                self.copy = None
                 V = self.cursorPos - self.pStart
                 for o in self.selection.selected:
                     o.translate(V)
@@ -209,9 +216,9 @@ class Canvas(QWidget):
             self.copy = self.selection.copy_contents()
 
     @pyqtSlot()
-    def paste_element(self):
-        if len(self.copy) > 0 :
-            for o in self.copy: o.translate(20,20)
+    def paste_element(self, vector = (20,20)):
+        if self.copy is not None and len(self.copy) > 0 :
+            for o in self.copy: o.translate(*vector)
             self.Lforms.extend(self.copy)
             self.selection.selected = self.copy
             self.copy = [o.copy() for o in self.copy]
@@ -320,7 +327,8 @@ class Canvas(QWidget):
                     if figure.contains(r) or r.contains(figure):
                         inside = True
                         break
-                if not inside: break
+                if not inside: 
+                    break
             return figure
 
 

@@ -6,6 +6,9 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torchvision.transforms import ToTensor, transforms
+import torchvision.transforms as T
+import matplotlib.pyplot as plt
+
 from PIL import Image
 
 class Recommender(QMainWindow):
@@ -56,12 +59,16 @@ class Recommender(QMainWindow):
         painter.drawRect(self.rect())
 
     def update(self, state):
+        print("Get Image")
         state = self.QImageToCvMat(state)
+        print('TO Numpy')
         m_size = len(self.memory)
         for i in range(m_size): 
             s = self.memory[i]
             # cree la donnee a predire
+            print('Predicting')
             pred_command, confiance = self.model.predict(s, state) 
+            print("Prediction: ", i)
             self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
             break
         # ajoute l'etat precedent
@@ -90,19 +97,19 @@ class Model():
         self.classe_names = classe_names
 
         self.image_transform = transforms.Compose([
-            transforms.Resize((64, 64)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            crop(),
+            transforms.Resize((64, 64)),
         ])
     
     # a, b (np.array)
     # return (prediction, confiance)
     def predict(self, a, b):
-        s = np.hstack((a,b))
-        s = np.array(s).astype(np.uint8)[:,:,:3]
+        s = np.array(b).astype(np.uint8)[1:,:,:3]
         s = Image.fromarray(s)
         x = self.image_transform(s).reshape((1,3,64,64))
-        print(x.shape)
+        #plt.imshow(T.ToPILImage()(x[0]))
+        #plt.show()
         output = self.model(x)
         index = output.argmax(1)
         if self.classe_names is not None:
@@ -128,6 +135,16 @@ class LeNet(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
+    
+class crop(object):
+    def __call__(self, img):
+        a = np.where(img.mean(0) != 1)
+        print(img.mean(0))
+        x1,x2,y1,y2 = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
+        return img[:, x1:x2,y1:y2]
+    
+    def __repr__(self):
+        return self.__class__.__name__+'()'
 
 
 
