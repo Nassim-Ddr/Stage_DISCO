@@ -13,7 +13,6 @@ class Canvas(QWidget):
         # configurations du canvas
         self.setMinimumSize(300,300)
         self.setContentsMargins(10,10,10,10)
-        self.setMouseTracking(True)
         
         # attributs d'affichage
         self.bkcolor = QColor(Qt.blue) # couleur de fond et du contour (par defaut)
@@ -59,11 +58,11 @@ class Canvas(QWidget):
         # On selectionne une figure
         elif self.mode == 'select':
             p = event.pos()/self.scale - self.painterTranslation
-
             if QApplication.keyboardModifiers() != Qt.ShiftModifier:
                 self.selection.clear()
             if not self.selection.toogleSelect(self.Lforms,p): 
                 self.selection.clear()
+            self.pStart = (event.pos()/self.scale - self.painterTranslation)
             self.update()
         # On dessine
         else:
@@ -97,6 +96,13 @@ class Canvas(QWidget):
                 V = self.cursorPos - self.pStart
                 self.setter(V)
                 self.pStart = self.cursorPos
+            
+            elif self.mode == 'select':
+                self.cursorPos= (self.cursorPos/self.scale - self.painterTranslation)
+                V = self.cursorPos - self.pStart
+                for o in self.selection.selected:
+                    o.translate(V)
+                self.pStart = self.cursorPos
             self.update()
 
 
@@ -104,12 +110,12 @@ class Canvas(QWidget):
         # La figure est dessinee, on l'ajoute dans la liste d'objets
         if self.mode == 'draw':
             pass
-
         elif self.mode == 'resize':
             self.corner_resize = None
             self.setter = None
             self.mode = 'select'
-
+        elif self.mode == 'select':
+            self.logger.update(self.getImage(), 'Move')
         self.pStart = None
         self.cursorPos = None
         self.update()
@@ -301,15 +307,27 @@ class Canvas(QWidget):
             self.logger.update(self.getImage(), 'alignBottom')
     
     def randomize(self):
-        number = np.random.randint(2, 5)
+        # create object not inside another object
+        def randomObject(L):
+            figure  = None
+            for _ in range(50):
+                inside = False
+                x1,y1, x2,y2 = np.random.randint(0,300, size=4)
+                r,g,b = np.random.randint(0, 255, size=3)
+                args = (QRect(QPoint(x1,y1), QPoint(x2,y2)), QColor(r,g,b))
+                figure = QRectPlus(*args) if rand==0 else QEllipse(*args)
+                for r in L:
+                    if figure.contains(r) or r.contains(figure):
+                        inside = True
+                        break
+                if not inside: break
+            return figure
+
+
+        number = np.random.randint(2, 4)
         objects = []
         for rand in np.random.binomial(1, 0.5, number):
-            x1,y1, x2,y2 = np.random.randint(0,300, size=4)
-            r,g,b = np.random.randint(0, 255, size=3)
-            color = QColor(r,g,b)
-            args = (QRect(QPoint(x1,y1), QPoint(x2,y2)), color)
-            figure = QRectPlus(*args) if rand==0 else QEllipse(*args)
-            objects.append(figure)
+            objects.append(randomObject(objects))
         self.Lforms = objects
         self.selection.clear()
         self.update()
