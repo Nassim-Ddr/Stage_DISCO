@@ -5,7 +5,20 @@ import csv
 
 from sklearn.feature_extraction.text import CountVectorizer
 
+def bag_of_words(text):
+    # CountVectorizer cf. scikit-learn
+    vectorizer = CountVectorizer()
 
+    # Fit transform
+    vectorizer.fit_transform([text])
+
+    # Get names
+    feature_names = vectorizer.get_feature_names_out()
+
+    # Get the bag of words representation as a dictionary 
+    bag_of_word = dict(zip(feature_names, vectorizer.transform([text]).toarray()[0]))
+
+    return feature_names
 
 class MapperLog():
     def __init__(self,write = False):

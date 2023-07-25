@@ -77,7 +77,7 @@ class CustomTextEdit(QTextEdit):
         elif event.key() == Qt.Key_Left and modifiers == Qt.ShiftModifier:
             self.handle_selectionL(starting)
         elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Left:
-            self.handle_WordSelectionR(starting)
+            self.handle_WordSelectionL(starting)
         elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Right:
             self.handle_WordSelectionR(starting)
         elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
@@ -465,25 +465,60 @@ def useAct(action,app,window):
 
 
 
-def play(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 500,moves = 12):
+def play(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 100,moves = 5):
 
-    for i in range(epochs):
-        for j in range(moves):
+    tmpep = epochs*len(commandList3)
+    tmpmoves = moves*len(commandList3)
+    for i in range(tmpep):
+        for j in range(tmpmoves):
             act = np.random.choice(commandList3)
             useAct(act,texteditor,window)
         reset(texteditor)
+    
 
-    for i in range(epochs):
-        for j in range(moves):
+    tmpep = epochs*len(commandList1)
+    tmpmoves = moves*len(commandList1)
+
+    for i in range(tmpep):
+        for j in range(tmpmoves):
             act = np.random.choice(commandList1)
             useAct(act,texteditor,window)
         reset(texteditor)
+    
 
-    for i in range(epochs):
-        for j in range(moves):
+    tmpep = epochs*len(commandList2)
+    tmpmoves = moves*len(commandList2)
+
+    for i in range(tmpep):
+        for j in range(tmpmoves):
             act = np.random.choice(commandList2)
             useAct(act,texteditor,window)
         reset(texteditor)
+    
+
+def playNonRand(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 500,moves = 5):
+
+    for k in range(len(commandList3)):
+        act = commandList3[k]
+        for i in range(epochs):
+            for j in range(moves):
+                useAct(act,texteditor,window)
+            reset(texteditor)
+    
+    for k in range(len(commandList1)):
+        act = commandList1[k]
+        for i in range(epochs):
+            for j in range(moves):
+                useAct(act,texteditor,window)
+            reset(texteditor)
+    
+
+    for k in range(len(commandList2)):
+        act = commandList2[k]
+        for i in range(epochs):
+            for j in range(moves):
+                useAct(act,texteditor,window)
+            reset(texteditor)
     
     
 
@@ -493,20 +528,18 @@ if __name__ == "__main__":
 
     window = MainWindow()
     window.show()
-    R = Recommender("./models/model")
+    R = Recommender("./models/modelSel")
     window.text_edit.logger.assistant = R
     R.show()
-    #actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
+    actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
     actionsSel = ["SelectWR","SelectWL","SelectAll"]
     actionsMove = ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab"]
     actionsWord = ["WordDel","Replace"]
     #play(window.text_edit,window,actionsSel,actionsMove,actionsWord,reset_function=reset)
+    #playNonRand(window.text_edit,window,actionsSel,actionsMove,actionsWord,reset_function=reset)
 
     app.exec()
 
     #window.text_edit.logger.file2.close()
     #window.text_edit.logger.file.close()
-    #player = WordPlayer()
-    #self.player.app.text_edit.logger.file2.close()
-    #self.player.app.text_edit.logger.file.close()
     
