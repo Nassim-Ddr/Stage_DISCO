@@ -209,9 +209,10 @@ if __name__=="__main__":
     window = MainWindow()
     window.show()
     # Recommender
-    R = Recommender("models/model")
+    R = Recommender("models/model0")
     window.canvas.logger.recommender = R
     R.show()
 
     app.exec_()
-    window.canvas.logger.file.close()
+    if window.canvas.logger.file is not None:
+        window.canvas.logger.file.close()
