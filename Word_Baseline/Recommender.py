@@ -9,7 +9,7 @@ from torchvision.transforms import ToTensor, transforms
 from PIL import Image
 
 class Recommender(QWidget):
-    def __init__(self, model, max_size_memory = 5):
+    def __init__(self, model, max_size_memory = 1):
         super().__init__()
         # Interface du recommender
         self.setWindowTitle("Assistant qui bourre le pantalon")
@@ -48,12 +48,14 @@ class Model():
     def __init__(self, model, classe_names = None):
         self.model = NeuralNet()
         self.model.load_state_dict(torch.load(model))
+        self.model.eval()
         self.classe_names = classe_names
 
     # a, b (np.array)
     # return (prediction, confiance)
     def predict(self, a,b):
-        x = np.hstack((a,b))
+        #x = np.hstack((a,b))
+        x = b-a
         x = np.array([x]).astype("float32")
         x = torch.from_numpy(x)
         print(x.shape)
@@ -70,11 +72,15 @@ class NeuralNet(nn.Module):
         super().__init__()
         self.flatten = nn.Flatten()
         self.linear_tanH_stack = nn.Sequential(
-            nn.Linear(2608, 512),
+            nn.Linear(7, 128),
             nn.ReLU(),
-            nn.Linear(512, 256),
+            nn.Linear(128, 256),
             nn.ReLU(),
-            nn.Linear(256, 9)
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 9)
         )
 
     def forward(self, x):
