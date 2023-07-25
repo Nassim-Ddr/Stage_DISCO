@@ -58,14 +58,27 @@ class Canvas(QWidget):
         # On selectionne une figure
         elif self.mode == 'select':
             p = event.pos()/self.scale - self.painterTranslation
+            f = self.selection.find(self.Lforms, p)
             if QApplication.keyboardModifiers() == Qt.ShiftModifier:
-                self.selection.toogleSelect(self.Lforms,p)
+                if f is None: pass
+                elif self.selection.isEmpty(): self.selection.add_element(f)
+                elif not self.selection.contains(f):
+                    self.selection.add_element(f)
+                else:
+                    self.selection.remove_element(f)
             elif  QApplication.keyboardModifiers() == Qt.ControlModifier:
-                self.selection.toogleSelect(self.Lforms,p)
-                self.copy_element()
+                if f is None: pass
+                elif self.selection.isEmpty(): self.selection.add_element(f)
+                elif not self.selection.contains(f):
+                    self.selection.add_element(f)
+                else:
+                    self.selection.remove_element(f)
             else:    
-                self.selection.clear()
-                self.selection.toogleSelect(self.Lforms,p)
+                if f is None: self.selection.clear()
+                elif self.selection.isEmpty(): self.selection.add_element(f)
+                elif not self.selection.contains(f):
+                    self.selection.clear()
+                    self.selection.add_element(f)
 
             self.pStart = (event.pos()/self.scale - self.painterTranslation)
         # On dessine

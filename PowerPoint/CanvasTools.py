@@ -134,14 +134,29 @@ class Selection():
     def clear(self):
         self.selected.clear()
     
-    def toogleSelect(self, board, cursor):
+    # add element in selection
+    def add_element(self, f):
+        if f is not None and f not in self.selected:
+            self.selected.append(f)
+            return True
+        return False
+    
+    # add element in selection
+    def remove_element(self, f):
+        try:
+            self.selected.remove(f)
+        except:
+            pass
+
+    # find a object containing the cursor
+    def find(self, board, cursor):
         for i in range(len(board)-1, -1, -1):  
-            if board[i].contains(cursor):
-                try:
-                    self.selected.remove(board[i])
-                except:
-                    self.selected.append(board[i])
-                return True
+            if board[i].contains(cursor): return board[i]
+        return None
+
+    def contains(self, f):
+        for o in self.selected:
+            if o == f: return True
         return False
         
     def resizeSelect(self, cursor):
