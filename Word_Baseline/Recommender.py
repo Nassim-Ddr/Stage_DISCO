@@ -34,7 +34,7 @@ class Recommender(QWidget):
             s = self.memory[i]
             # cree la donnee a predire
             pred_command, confiance = self.model.predict(s, state) 
-            self.setText(pred_command)
+            self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
             break
         # ajoute l'etat precedent
         # supprime si la liste est trop grande
@@ -50,8 +50,6 @@ class Model():
         self.model.load_state_dict(torch.load(model))
         self.classe_names = classe_names
 
-
-    
     # a, b (np.array)
     # return (prediction, confiance)
     def predict(self, a,b):

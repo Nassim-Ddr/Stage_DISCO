@@ -3,22 +3,16 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import signal
 from collections import Counter
 from MapperLog import MapperLog
 from MapperLog2 import MapperLog2
 
-from threading import Thread
-import pyautogui
 from time import sleep
 from PyQt5.QtTest import QTest
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
 from Recommender import *
-import torch
-from torch import nn
-import torch.nn.functional as F
 
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
