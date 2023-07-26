@@ -7,9 +7,10 @@ from torch import nn
 import torch.nn.functional as F
 from torchvision.transforms import ToTensor, transforms
 from PIL import Image
+from HardCodedModel import HardCodedModel
 
 class Recommender(QWidget):
-    def __init__(self, model, max_size_memory = 1, hardCoded = False):
+    def __init__(self, model, max_size_memory = 2, hardCoded = False):
         super().__init__()
         # Interface du recommender
         self.setWindowTitle("Assistant qui bourre le pantalon")
@@ -22,10 +23,14 @@ class Recommender(QWidget):
         self.text = QTextEdit(self)
         layout.addWidget(self.text)
 
-        # variable du recommender
-        self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
-        self.memory = []
-        self.max_size_memory = max_size_memory
+        if hardCoded :
+            self.model = HardCodedModel()
+
+        else :
+            # variable du recommender
+            self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
+            self.memory = []
+            self.max_size_memory = max_size_memory
 
     def update(self, state):
         state, label = state
@@ -34,7 +39,7 @@ class Recommender(QWidget):
             s = self.memory[i]
             # cree la donnee a predire
             pred_command, confiance = self.model.predict(s, state) 
-            self.setText(pred_command)
+            self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
             break
         # ajoute l'etat precedent
         # supprime si la liste est trop grande
@@ -65,8 +70,6 @@ class Model():
         self.model.eval()
         self.classe_names = classe_names
 
-
-    
     # a, b (np.array)
     # return (prediction, confiance)
     def predict(self, a,b):

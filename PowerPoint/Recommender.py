@@ -41,7 +41,6 @@ class Recommender(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.resize(640, 480)
         QTimer.singleShot(1, self.topLeft)
         self.show()
 
@@ -49,7 +48,7 @@ class Recommender(QMainWindow):
         # no need to move the point of the geometry rect if you're going to use
         # the reference top left only
         topLeftPoint = QApplication.desktop().availableGeometry().topLeft()
-        self.move(topLeftPoint)
+        self.move(topLeftPoint + QPoint(50,50))
 
     def paintEvent(self, event=None):
         painter = QPainter(self)
