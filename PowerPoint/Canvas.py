@@ -73,6 +73,7 @@ class Canvas(QWidget):
                     self.selection.add_element(f)
                 else:
                     self.selection.remove_element(f)
+                self.copy_element()
             else:    
                 if f is None: self.selection.clear()
                 elif self.selection.isEmpty(): self.selection.add_element(f)
