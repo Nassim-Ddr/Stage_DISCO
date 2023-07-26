@@ -12,11 +12,13 @@ import pandas as pd
 
 class HardCodedModel():
     def predict(self, inputData):
-        inputData, label = inputData[:len(inputData)-1], inputData[-1]
-        past, present = inputData[:7], inputData[7:]
-        oldPos, oldline1, oldcolumn1, oldline2, oldcolumn2, oldselStart1, oldselEnd1= past
-        newPos, newLine1, newColumn1, newLine2, newColumn2, newselStart1, newselEnd1 = present
+        # On utilisera un triplet 
+        bowData, allPos, label = inputData
+        past, present = allPos[:5], allPos[5:]
+        oldPos, oldline1, oldcolumn1, oldline2, oldcolumn2 = past
+        newPos, newLine1, newColumn1, newLine2, newColumn2 = present
 
+        oldbow, newbow = bowData
 
 
         # On va plus loin dans le document
@@ -27,23 +29,23 @@ class HardCodedModel():
                 if oldcolumn1 == newColumn1 :
                     # La fin de la selection se trouve sur la meme ligne
                     if oldline2 == newLine2 :
-                        if oldcolumn2 > newColumn2 and oldselEnd1 < newselEnd1 :
+                        if oldcolumn2 > newColumn2 :
                             # l'utilisateur décide de selectionner un element (un mot ou groupe de lettres, comment differencier son intention ?)
                             print("CTRL + Shift + Left")
-                        elif oldcolumn2 < newColumn2 and oldselEnd1 > newselEnd1:
+                        elif oldcolumn2 < newColumn2 :
                             # l'utilisateur décide de deselectionner des elements en plus sur une ligne
                             print("CTRL + Shift + Right")
                         else:
                             # L'utilisateur s'est déplacé
                             print("CTRL + Right")
                     else :
-                        if oldselEnd1 < newselEnd1 :
-                            # Une selection sur la meme ligne, donc la fin est plus loin vers la droite dans ce cas
-                            print("CTRL + Shift + Right")
+                        # Une selection sur la meme ligne, donc la fin est plus loin vers la droite dans ce cas
+                        print("CTRL + Shift + Right")
                 else:
                     print("Deplacement droite (CTRL+Right pour se deplacer de mot en mot)")
             else:
                 print("Deplacement droite (CTRL+Right pour se deplacer de mot en mot)")
+            return
         elif oldPos == newPos :
             print("rien ne s'est passe")
         # La selection se fait de droite à gauche
@@ -52,10 +54,10 @@ class HardCodedModel():
                 if oldcolumn2 == newColumn2:
                     if oldline1 == newLine1:
                         # old > new -> mouvement vers la gauche
-                        if oldcolumn1 > newColumn1 and oldselStart1 > newselStart1 :
+                        if oldcolumn1 > newColumn1:
                             print("CTRL + Shift + Left")
                         # old < new -> mouvement vers la droite
-                        elif oldcolumn1 < newColumn1 and oldselStart1 < newselStart1:
+                        elif oldcolumn1 < newColumn1:
                             print("CTRL + Shift + Right")
                         else:
                             print("CTRL + Left")
@@ -66,4 +68,5 @@ class HardCodedModel():
                     print("Deplacement gauche (CTRL+Left pour se deplacer de mot en mot)")
             else :
                 print("Deplacement gauche (CTRL+Left pour se deplacer de mot en mot)")
+            return
         

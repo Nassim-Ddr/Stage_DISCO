@@ -35,10 +35,10 @@ def find_bb(img_org, img_edt) :
     save_folder = "../data/pair_tmp/"
 
     # Find the bounding boxes around the edited areas, with a minimum area of 1000 pixels
-    edited_areas = find_edited_areas(image1, image2, min_area=10)
+    edited_areas = find_edited_areas(image1, image2, min_area=70)
 
     # Define the scaling factor (1.0 means no scaling)
-    scale_factor = 1.2
+    scale_factor = 1.5
 
     # Used for the second approach (define the bounding box of smaller bounding boxes)
     min_x = min_y = 100000
@@ -53,11 +53,11 @@ def find_bb(img_org, img_edt) :
             scaled_y = max(0, int(y - (scaled_h - h) / 2))
 
             # Crop the selected area
-            # cropped_image1 = image1[scaled_y:scaled_y + scaled_h, scaled_x:scaled_x + scaled_w]
-            # cropped_image2 = image2[scaled_y:scaled_y + scaled_h, scaled_x:scaled_x + scaled_w]
+            cropped_image1 = image1[scaled_y:scaled_y + scaled_h, scaled_x:scaled_x + scaled_w]
+            cropped_image2 = image2[scaled_y:scaled_y + scaled_h, scaled_x:scaled_x + scaled_w]
             
-            # final_image = np.hstack((cropped_image1, cropped_image2))
-            # cv2.imwrite(save_folder + "final_pair_" + str(i) + ".jpg", final_image)
+            final_image = np.hstack((cropped_image1, cropped_image2))
+            cv2.imwrite(save_folder + "final_pair_" + str(i) + ".jpg", final_image)
 
             if (min_x > scaled_x) : min_x = scaled_x
             if (min_y > scaled_y) : min_y = scaled_y
