@@ -25,7 +25,7 @@ import torch.nn.functional as F
 class CustomTextEdit(QTextEdit):
     def __init__(self, parent= None):
         super().__init__(parent)
-        self.logger = MapperLog2(False)
+        self.logger = MapperLog2(True)
         self.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
         text_length = len(self.toPlainText())
         mid = text_length//2
@@ -528,9 +528,9 @@ if __name__ == "__main__":
 
     window = MainWindow()
     window.show()
-    R = Recommender("./models/modelSel")
-    window.text_edit.logger.assistant = R
-    R.show()
+    #R = Recommender("./models/modelSel")
+    #window.text_edit.logger.assistant = R
+    #R.show()
     actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
     actionsSel = ["SelectWR","SelectWL","SelectAll"]
     actionsMove = ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab"]

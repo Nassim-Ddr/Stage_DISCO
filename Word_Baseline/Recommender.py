@@ -9,7 +9,7 @@ from torchvision.transforms import ToTensor, transforms
 from PIL import Image
 
 class Recommender(QWidget):
-    def __init__(self, model, max_size_memory = 1):
+    def __init__(self, model, max_size_memory = 1, hardCoded = False):
         super().__init__()
         # Interface du recommender
         self.setWindowTitle("Assistant qui bourre le pantalon")
@@ -34,6 +34,20 @@ class Recommender(QWidget):
             s = self.memory[i]
             # cree la donnee a predire
             pred_command, confiance = self.model.predict(s, state) 
+            self.setText(pred_command)
+            break
+        # ajoute l'etat precedent
+        # supprime si la liste est trop grande
+        self.memory.append(state)
+        if m_size >= self.max_size_memory: self.memory.pop(0)
+    
+    def updateHardCoded(self, state,texteditor):
+        state, label = state
+        m_size = len(self.memory)
+        for i in range(m_size): 
+            s = self.memory[i]
+            # cree la donnee a predire
+            pred_command = self.model.predict(s, state,texteditor) 
             self.setText(pred_command)
             break
         # ajoute l'etat precedent
