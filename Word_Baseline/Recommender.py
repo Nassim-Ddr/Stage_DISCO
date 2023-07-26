@@ -23,14 +23,15 @@ class Recommender(QWidget):
         self.text = QTextEdit(self)
         layout.addWidget(self.text)
 
+        self.memory = []
+        self.max_size_memory = max_size_memory
         if hardCoded :
             self.model = HardCodedModel()
 
         else :
             # variable du recommender
             self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
-            self.memory = []
-            self.max_size_memory = max_size_memory
+            
 
     def update(self, state):
         state, label = state
