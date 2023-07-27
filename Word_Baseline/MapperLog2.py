@@ -47,7 +47,7 @@ class MapperLog2():
     def update(self,command,state,texteditor):
 
         # format :
-        text, cursorPos, cursorEnd, selStart,selEnd = state
+        text,word_count, cursorPos, cursorEnd, selStart,selEnd = state
 
 
         line2, column2 = cursorEnd
@@ -55,9 +55,12 @@ class MapperLog2():
 
 
         treated = self.vectorizer.transform([text]).toarray()[0]
+        word_count -= np.sum(treated)
+        treated = np.hstack((treated,[word_count]))
         treatedPos = np.array([cursorPos,line2,column2,selStart,selEnd]).astype(int)
         #print(treated)
 
+        
 
         if self.curState is None or self.curPosState is None :
             self.curState=treated
@@ -76,7 +79,7 @@ class MapperLog2():
         self.curState = treated
         self.curPosState=treatedPos
 
-        if not (self.onWrite):
+        if not (self.onWrite) and self.assistant is not None:
             #self.assistant.update( (np.hstack((treated, treatedPos)),command) )
             self.assistant.updateHardCoded((treatedPos,command),texteditor)
 

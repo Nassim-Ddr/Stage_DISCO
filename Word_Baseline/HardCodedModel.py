@@ -22,6 +22,12 @@ class HardCodedModel():
 
         cursor = texteditor.textCursor()
 
+        if newPos == cursor.End and (newselStart1 == 0 and newselEnd1 == cursor.End):
+            if newselStart1 != oldselStart1 or newselEnd1 != oldselEnd1 :
+                print("Aucune action n'a été faite")
+            else:
+                print("CTRL + A (SelectAll)")
+
         # On va plus loin dans le document
         isEnd = self.check_cursorEnd(cursor)
         isStart = self.check_cursorStart(cursor)

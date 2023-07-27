@@ -85,20 +85,24 @@ class CustomTextEdit(QTextEdit):
     def handle_copy(self):
         # toPlainText() recupere le texte
         #print(self.toPlainText())
-        print("J'ai copié")
+        #print("J'ai copié")
+        pass
 
     def handle_backspace(self):
         #print("Supprimer le mot")
-        self.updated("delWord")
+        self.updated("deleteWord")
 
     def handle_delete(self):
         print("Supprimer ?")
 
+    # on groupe copier coller
     def handle_paste(self):
-        print("J'ai collé")
+        #print("J'ai collé")
+        self.updated("copyPaste")
 
     def handle_cut(self):
-        print("J'ai coupé")
+        #print("J'ai coupé")
+        pass
 
     def handle_undo(self):
         print("Annulay")
@@ -109,12 +113,12 @@ class CustomTextEdit(QTextEdit):
     def handle_move_cursor_left(self):
         #print(self.textCursor().position())
         #print("je vais a gauche ",self.textCursor().position())
-        self.updated("moveL")
+        self.updated("moveLeft")
 
     def handle_move_cursor_right(self):
         #print(self.textCursor().position())
         #print("je vais à droite ",self.textCursor().position())
-        self.updated("moveR")
+        self.updated("moveRight")
     
     def handle_replace(self):
         self.updated("replace")
@@ -122,11 +126,11 @@ class CustomTextEdit(QTextEdit):
     
     def handle_move_start_line(self):
         #print("going to the start of the line")
-        self.updated("moveSLine")
+        self.updated("moveStartOfLine")
 
     def handle_move_end_line(self):
         #print("going to the end of the line")
-        self.updated("moveELine")
+        self.updated("moveEndOfLine")
     
     def handle_selectionR(self):
         cursor = self.textCursor()
@@ -143,20 +147,20 @@ class CustomTextEdit(QTextEdit):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
 
-        print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
-        self.updated("selectWR")
+        #print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
+        #self.updated("selectRightWord")
 
     def handle_WordSelectionL(self):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("selectLR")
+        #self.updated("selectLeftWord")
         
 
     def handle_fullselection(self):
         cursor = self.textCursor()
         #print("full selection")
         
-        self.updated("selectAll")
+        self.updated("selectAllDoc")
         #print("after : ",cursor.blockNumber(),cursor.columnNumber())
         
     
@@ -168,7 +172,10 @@ class CustomTextEdit(QTextEdit):
         endPos = (cursor.blockNumber(),cursor.columnNumber())
         startSel = cursor.selectionStart()
         endSel = cursor.selectionEnd()
-        self.logger.update(command, (self.toPlainText(),cursor.position(),endPos,startSel,endSel),self)
+
+        text = self.toPlainText()
+        word_count = len(text.split())
+        self.logger.update(command, (self.toPlainText(),word_count,cursor.position(),endPos,startSel,endSel),self)
 
 
 class WordFrequencyWidget(QWidget):
@@ -353,6 +360,34 @@ class MainWindow(QMainWindow):
                     cursor = document.find(search_text, cursor)
         #print(search_text)
         self.text_edit.handle_replace()
+    
+    # Comment : It doesn't matter where we paste it as long as it's on an empty space due to how bag of word works
+    def playerCopyPaste(self):
+        texteditor = self.text_edit
+        dice = np.random.randint(2,7)
+        direction = (np.random.random() < 0.5)
+
+        # direction selected (left of right)
+        if direction :
+            # Number of element selected
+            for i in range(dice):
+                QTest.keyPress(texteditor, Qt.Key_Right, Qt.ControlModifier | Qt.ShiftModifier)
+        # copy
+        else : 
+            # Number of element selected
+            for i in range(dice):
+                QTest.keyPress(texteditor, Qt.Key_Left, Qt.ControlModifier | Qt.ShiftModifier)
+
+        QTest.keyPress(texteditor,Qt.Key_C,  Qt.ControlModifier)
+
+        # move the cursor to the end of the document
+        cursor = texteditor.textCursor()
+        cursor.movePosition(cursor.End)
+        texteditor.setTextCursor(cursor)
+        QTest.keyPress(texteditor,Qt.Key_Space)
+
+        # Pasting the text
+        QTest.keyPress(texteditor,Qt.Key_V,  Qt.ControlModifier)
 
 
     def toggle_bold(self, boolgras):
@@ -453,13 +488,16 @@ def useAct(action,app,window):
 
             window.replacePlayer(toreplace,replaced)
 
+        case "CopyPaste":
+            window.playerCopyPaste()
+
 
     cursor = app.textCursor()
     cursor.clearSelection()
     app.setTextCursor(cursor)
 
 
-def play(texteditor,window,commands,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 1000,moves =10):
+def play(texteditor,window,commands,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 4000,moves =10):
     for i in range(epochs):
         for j in range(moves):
             cursor = texteditor.textCursor()
@@ -470,7 +508,9 @@ def play(texteditor,window,commands,start_funtion=lambda: print(None), reset_fun
         reset(texteditor)
 
 
-# Machine learning data creation that does not work well in practice
+    
+
+# Machine learning data creation that does not work well in practice for selection
 """def play(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 100,moves = 5):
 
     tmpep = epochs*len(commandList3)
@@ -541,10 +581,10 @@ if __name__ == "__main__":
     #actionsSel = ["SelectWR","SelectWL","SelectAll"]
     #actionsMove = ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab"]
     # Copy paste bigram
-    actionsWord = ["WordDel","Replace"]
+    actionsWord = ["WordDel","Replace","CopyPaste"]
     #play(window.text_edit,window,actionsSel,actionsMove,actionsWord,reset_function=reset)
     #playNonRand(window.text_edit,window,actionsSel,actionsMove,actionsWord,reset_function=reset)
-    play(window.text_edit,window,actionsWord)
+    #play(window.text_edit,window,actionsWord)
 
     app.exec()
 
