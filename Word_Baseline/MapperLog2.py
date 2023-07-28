@@ -47,16 +47,13 @@ class MapperLog2():
     def update(self,command,state,texteditor):
 
         # format :
-        text,word_count, cursorPos, cursorEnd, selStart,selEnd = state
-
+        text,word_count,charlen, cursorPos, cursorEnd, selStart,selEnd = state
 
         line2, column2 = cursorEnd
 
-
-
         treated = self.vectorizer.transform([text]).toarray()[0]
         word_count -= np.sum(treated)
-        treated = np.hstack((treated,[word_count]))
+        treated = np.hstack([treated,[word_count],[charlen]])
         treatedPos = np.array([cursorPos,line2,column2,selStart,selEnd]).astype(int)
         #print(treated)
 
@@ -79,9 +76,10 @@ class MapperLog2():
         self.curState = treated
         self.curPosState=treatedPos
 
-        if not (self.onWrite) and self.assistant is not None:
+        if not (self.onWrite) and self.assistant is not None :
             #self.assistant.update( (np.hstack((treated, treatedPos)),command) )
-            self.assistant.updateHardCoded((treatedPos,command),texteditor)
+            #self.assistant.updateHardCoded(treatedPos,texteditor)
+            self.assistant.update(treated,treatedPos,texteditor)
 
 def bag_of_words(text):
     # CountVectorizer cf. scikit-learn

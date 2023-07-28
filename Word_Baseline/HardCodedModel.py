@@ -24,9 +24,9 @@ class HardCodedModel():
 
         if newPos == cursor.End and (newselStart1 == 0 and newselEnd1 == cursor.End):
             if newselStart1 != oldselStart1 or newselEnd1 != oldselEnd1 :
-                print("Aucune action n'a été faite")
+                return 
             else:
-                print("CTRL + A (SelectAll)")
+                return "CTRL + A (SelectAll)"
 
         # On va plus loin dans le document
         isEnd = self.check_cursorEnd(cursor)
@@ -34,39 +34,39 @@ class HardCodedModel():
         if oldPos < newPos and newPos-oldPos > 3 :      
             if oldselStart1 == newselStart1 and oldselEnd1 < newselEnd1:
                 if isEnd :
-                    print("CTRL + Shift + Fin (End) Button")
+                    return "CTRL + Shift + Fin (End) Button"
                 else :
                     # l'utilisateur décide de deselectionner des elements en plus sur une ligne
-                    print("CTRL + Shift + Right")
+                    return "CTRL + Shift + Right"
             elif oldselEnd1 == newselEnd1 and oldselStart1 < newselStart1 :
-                print("CTRL + Shift + Right")
+                return "CTRL + Shift + Right"
             elif isEnd :
-                print("CTRL + Fin (End)")
+                return "CTRL + Fin (End)"
             else:
                 # déplacement vers la droite
-                print("CTRL + Right")
+                return "CTRL + Right"
         elif oldPos == newPos :
-            print("rien ne s'est passe ou alors action inverse")
+            return "rien ne s'est passe ou alors action inverse"
         # La selection se fait de droite à gauche
         elif oldPos > newPos and oldPos - newPos > 3 :
             # dans le cas où la selection se passe sur la meme ligne (si la ligne est differente, l'utilisateur se deplace vers la droite)  
             if oldselStart1 == newselStart1 and oldselEnd1 > newselEnd1 :
                 if isEnd :
-                    print("CTRL + Shift + Home")
+                    return "CTRL + Shift + Home"
                 else :
                     # l'utilisateur décide de selectionner un element (un mot ou groupe de lettres, comment differencier son intention ?)
-                    print("CTRL + Shift + Left")
+                    return "CTRL + Shift + Left"
             elif oldselEnd1 == newselEnd1 and oldselStart1 > newselStart1 :
                 if isStart :
-                    print("CTRL + Shift + Home")
+                    return "CTRL + Shift + Home"
                 else :
-                    print("CTRL + Shift + Left")
+                    return "CTRL + Shift + Left"
 
             elif isStart :
-                print("CTRL + Home")
+                return "CTRL + Home"
             else :
                 # déplacement vers la gauche
-                print("CTRL + Left")
+                return "CTRL + Left"
     
     def check_cursorEnd(self,cursor):
 
