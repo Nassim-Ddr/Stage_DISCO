@@ -54,6 +54,7 @@ class QRectImage(QRectPlus):
         L = [(getattr(self, f)().x(), getattr(self, f)().y()) for f in Lf]
         x1,y1 = np.min(L,0)
         x2,y2 = np.max(L,0)
+        print(self)
         painter.drawImage(QRect(x1,y1,x2-x1,y2-y1), self.image)
     
     def copy(self):

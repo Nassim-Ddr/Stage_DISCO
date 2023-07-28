@@ -41,6 +41,7 @@ class Canvas(QWidget):
         fileName = QFileDialog.getOpenFileName( self,"Open Image", "./", "Images (*.png *.xpm *.jpg)")[0]
         if len(fileName)==0:
             return 
+        print(fileName)
         self.Lforms.append(QRectImage(QRect(10, 10, 100, 100), QImage(fileName)))
         self.update()
 
@@ -307,25 +308,25 @@ class Canvas(QWidget):
         if not self.selection.isEmpty():
             self.alignTool.alignLeft(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignLeft')
+            self.logger.update(self.getImage(), 'alignLeft', Lforms=self.Lforms)
 
     def alignRight(self):
         if not self.selection.isEmpty():
             self.alignTool.alignRight(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignRight')
+            self.logger.update(self.getImage(), 'alignRight', Lforms=self.Lforms)
     
     def alignTop(self):
         if not self.selection.isEmpty():
             self.alignTool.alignTop(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignTop')
+            self.logger.update(self.getImage(), 'alignTop', Lforms=self.Lforms)
 
     def alignBottom(self):
         if not self.selection.isEmpty():
             self.alignTool.alignBottom(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignBottom')
+            self.logger.update(self.getImage(), 'alignBottom', Lforms=self.Lforms)
     
     def randomize(self):
         # create object not inside another object
@@ -346,7 +347,7 @@ class Canvas(QWidget):
             return figure
 
 
-        number = np.random.randint(2, 4)
+        number = np.random.randint(2, 5)
         objects = []
         for rand in np.random.binomial(1, 0.5, number):
             objects.append(randomObject(objects))

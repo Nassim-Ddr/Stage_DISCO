@@ -78,7 +78,8 @@ if __name__ == '__main__':
         canvas.alignTop
     ]
     def call_function():
-        canvas.selection.selected = canvas.Lforms
+        n = np.random.randint(2,len(canvas.Lforms)+1)
+        canvas.selection.selected = np.random.choice(canvas.Lforms, size = n, replace=False)
     canvas.logger.write = True
     player = Player()
     player.start(actions, canvas.randomize, canvas.reset, call_function, parameters=(10,1))
