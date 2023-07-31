@@ -8,9 +8,10 @@ import torch.nn.functional as F
 from torchvision.transforms import ToTensor, transforms
 from PIL import Image
 from HardCodedModel import HardCodedModel
+from sklearn.preprocessing import normalize
 
 class Recommender(QWidget):
-    def __init__(self, model, max_size_memory = 2, hardCoded = False):
+    def __init__(self, model, max_size_memory = 4, hardCoded = False):
         super().__init__()
         # Interface du recommender
         self.setWindowTitle("Assistant qui bourre le pantalon")
@@ -29,7 +30,7 @@ class Recommender(QWidget):
         self.modelHard = HardCodedModel()
         # variable du recommender
         # self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
-        self.model = Model(model, ["WordDel","Replace","CopyPaste","WriteWord"])
+        self.model = Model(model, ["WriteWord","CopyPaste","WordDel","Search&Replace"])
             
 
     def update(self, state,stateHardcode,texteditor):
@@ -42,13 +43,14 @@ class Recommender(QWidget):
                 continue
             # cree la donnee a predire
             pred_command, confiance = self.model.predict(s, state) 
-            self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
-            ok = False
+            if (pred_command != "WriteWord"):
+                self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
+                ok = False
             break
         if ok :
             self.updateHardCoded(stateHardcode,texteditor)
         else :
-            self.memory2.append(state)
+            self.memory2.append(stateHardcode)
             m_size2 = len(self.memory2)
             if m_size2 >= self.max_size_memory: self.memory2.pop(0)
         # ajoute l'etat precedent
@@ -87,8 +89,10 @@ class Model():
     def predict(self, a,b):
         #x = np.hstack((a,b))
         x = a-b
+        x = x.reshape((1,len(x)))
         anotherX = normalize(x)
-        anotherX = np.array([anotherX]).astype("float32")
+        #anotherX = np.array([anotherX]).astype("float32")
+        anotherX = anotherX.astype("float32")
         anotherX = torch.from_numpy(anotherX)
         output = self.model(anotherX)
         index = output.argmax(1)
@@ -96,7 +100,7 @@ class Model():
             index = self.classe_names[index]
         print("output: ", output)
         print("index: ", index[0])
-        return str(index), output.max()
+        return str(index), output.softmax(dim=1).max()
 
 class NeuralNet(nn.Module):
     def __init__(self):

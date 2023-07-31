@@ -78,6 +78,8 @@ class CustomTextEdit(QTextEdit):
                 self.handle_move_start_line()
             elif event.key() == Qt.Key_End:
                 self.handle_move_end_line()
+            
+            # select single character
             elif event.key() == Qt.Key_Right and modifiers == Qt.ShiftModifier:
                 self.handle_selectionR()
             elif event.key() == Qt.Key_Left and modifiers == Qt.ShiftModifier:
@@ -86,6 +88,11 @@ class CustomTextEdit(QTextEdit):
                 self.handle_fullselection()
             elif event.key() == Qt.Key_Tab :
                 self.handle_tab()
+            # simple movements 
+            elif event.key() == Qt.Key_Right :
+                self.handle_goRightSingle()
+            elif event.key() == Qt.Key_Left :
+                self.handle_goLeftSingle()
 
         
         if event.key() == Qt.Key_Backspace and modifiers == Qt.ControlModifier:
@@ -145,11 +152,13 @@ class CustomTextEdit(QTextEdit):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
         #self.updated("selectR")
+        self.updated()
 
     def handle_selectionL(self):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
         #self.updated("selectL")
+        self.updated()
     
 
     def handle_WordSelectionR(self):
@@ -171,6 +180,12 @@ class CustomTextEdit(QTextEdit):
         
         self.updated("selectAllDoc")
         #print("after : ",cursor.blockNumber(),cursor.columnNumber())
+    
+    def handle_goLeftSingle(self):
+        self.updated()
+    
+    def handle_goRightSingle(self):
+        self.updated()
 
     
     # Others ---------------------------------------------------------------------
