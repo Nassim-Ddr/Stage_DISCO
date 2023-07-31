@@ -20,8 +20,6 @@ class MainWindow(QMainWindow):
         self.textEdit = QTextEdit(self.cont)
         self.textEdit.setReadOnly(True)
 
-        self.setStyleSheet("QMainWindow::titleBar { background-color: red; }")
-
         layout = QVBoxLayout()
         w = QMainWindow()
         w.setStyleSheet("border: 1px solid; border-color:grey; background-color:white")
@@ -31,7 +29,24 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(100,11,100,11)
 
         bar = self.menuBar()
-        bar.setStyleSheet("background-color: #b8442c; color: white")
+        css = """
+        QMenuBar{
+            Background: #b8442c;
+            color:white;
+            font-size:11px;
+        }
+        QMenuBar::item {
+            color : white;
+        }
+        QMenuBar::item:selected { /* when selected using mouse or keyboard */
+            background: #dc5939;
+        }
+
+        QMenuBar::item:pressed {
+            background: #dc5939;   
+        }
+        """
+        bar.setStyleSheet(css)
         bar.resize(600,100)
         # File Menu
         fileMenu = bar.addMenu("File")
