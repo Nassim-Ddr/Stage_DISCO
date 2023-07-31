@@ -11,7 +11,7 @@ from HardCodedModel import HardCodedModel
 from sklearn.preprocessing import normalize
 
 class Recommender(QWidget):
-    def __init__(self, model, max_size_memory = 4, hardCoded = False):
+    def __init__(self, model,texteditor, max_size_memory = 10, hardCoded = False):
         super().__init__()
         # Interface du recommender
         self.setWindowTitle("Assistant qui bourre le pantalon")
@@ -24,10 +24,14 @@ class Recommender(QWidget):
         self.text = QTextEdit(self)
         layout.addWidget(self.text)
 
+        # memory contenant les donnees pour le modele appris
         self.memory = []
+        # memory contenant les données pour le modele harcode
         self.memory2 = []
+
+        # la taille max des memoires
         self.max_size_memory = max_size_memory
-        self.modelHard = HardCodedModel()
+        self.modelHard = HardCodedModel(texteditor,historySize=max_size_memory)
         # variable du recommender
         # self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
         self.model = Model(model, ["WriteWord","CopyPaste","WordDel","Search&Replace"])
@@ -45,10 +49,15 @@ class Recommender(QWidget):
             pred_command, confiance = self.model.predict(s, state) 
             if (pred_command != "WriteWord"):
                 self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
-                ok = False
+            elif(pred_command == "WriteWord"):
+                if i != m_size-1:
+                    continue
+                else:
+                    break
+            ok = False
             break
         if ok :
-            self.updateHardCoded(stateHardcode,texteditor)
+            self.updateHardCoded(stateHardcode)
         else :
             self.memory2.append(stateHardcode)
             m_size2 = len(self.memory2)
@@ -58,6 +67,8 @@ class Recommender(QWidget):
         self.memory.append(state)
         if m_size >= self.max_size_memory: self.memory.pop(0)
     
+    
+    
     def updateHardCoded(self, state,texteditor):
         # state, label = state
         m_size = len(self.memory2)
@@ -65,6 +76,8 @@ class Recommender(QWidget):
             s = self.memory2[i]
             if np.sum(s-state) == 0:
                 continue
+            if i == m_size-1:
+                break
             # cree la donnee a predire
             pred_command = self.modelHard.predict(s, state,texteditor) 
             self.setText(pred_command)

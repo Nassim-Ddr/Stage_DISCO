@@ -16,12 +16,16 @@ import random
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
+    customTextChanged = pyqtSignal(str)
     def __init__(self, parent= None,onWrite = False):
         super().__init__(parent)
+        # isWrite = True -> on cree un csv contenant les donnees
         self.isWrite = onWrite
         self.logger = MapperLog2(onWrite)
         #self.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
         self.setPlainText("The sun rises, and the morning brings a new day. Birds chirp, filling the air with melody.\nI wake up, feel refreshed, and get ready for the day ahead. I put on a comfortable shirt and jeans,\nready for a walk in the nearby park. As I stroll through the park, I see many people enjoying the outdoors.\nSome jog, others walk their dog. A child plays on the playground, laughing and having fun. It's a pleasant sight.\nIn the park, there is a tall tree providing shade from the sun. I find a bench under a tree and sit down to read a book.\nThe story is captivating, and time passes quickly. I lose myself in the pages, engrossed in the tale.\nAfter a while, I decide to explore more of the park. There is a pond with a duck swimming peacefully.\nI watch it for a while before continuing on my way. A group of friends has a picnic nearby,\nsharing food and laughter. As I walk, I notice a beautiful flower in various colors - red, blue, yellow, and white.\nThe fragrance of the flower fills the air,\nmaking the stroll even more delightful. I take a moment to admire the beauty of nature.\nAfter a pleasant walk, I head to a café for lunch. The café is cozy, and the menu offers a variety of dishes.\nI order a sandwich and a refreshing lemonade. The food is delicious, and I enjoy the peaceful atmosphere of the café.\nIn the afternoon, I meet a friend at the library. We browse through books, discussing our favorite author and genre.\nThe library is a treasure trove of knowledge, and we leave with a few books to read later.\nLater in the evening, I attend a music concert in the park. The band plays lively tunes,\nand the crowd claps along. The atmosphere is festive, and everyone enjoys the performance.\nAs the sun sets, the sky changes colors, displaying shades of orange and pink. It's a beautiful sight.\nIn conclusion, spending time outdoors and appreciating the simple pleasure of life can bring joy and fulfillment.\nThe NGSL provides a wide range of words to express the experience and emotion we encounter every day.")
+        
+        # On va placer le curseur au centre du document
         text_length = len(self.toPlainText())
         mid = text_length//2
         cursor = self.textCursor()
@@ -31,9 +35,11 @@ class CustomTextEdit(QTextEdit):
             self.textChanged.connect(self.updated)
 
 
-        # Fait en sorte que le cursor soit bien au milieu
+        # Fait en sorte que le cursor soit bien au milieu (le curseur est bien place)
         self.setTextCursor(cursor)
         self.ensureCursorVisible()
+    
+    
 
     def keyPressEvent(self, event):
         # si on appuie sur CTRL
@@ -54,26 +60,32 @@ class CustomTextEdit(QTextEdit):
         # Detection que lorsque le logiciel est en live 
 
         if not self.isWrite:
-            
-
-            if event.key() == Qt.Key_X and modifiers == Qt.ControlModifier:
-                self.handle_cut()
-            elif event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
+            # if event.key() == Qt.Key_X and modifiers == Qt.ControlModifier:
+            #     self.handle_cut()
+            if event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
                 self.handle_paste()
             # elif event.key() == Qt.Key_Z and modifiers == Qt.ControlModifier:
             #     self.handle_undo()
             # elif event.key() == Qt.Key_Y and modifiers == Qt.ControlModifier:
             #     self.handle_redo()
+
+            # selection de mot
             elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Left:
                 self.handle_WordSelectionL()
             elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Right:
                 self.handle_WordSelectionR()
-            elif event.key() == Qt.Key_C and modifiers == Qt.ControlModifier:
-                self.handle_copy()
+            
+            # copier
+            # elif event.key() == Qt.Key_C and modifiers == Qt.ControlModifier:
+            #     self.handle_copy()
+
+            # saut d'un mot vers la gauche/droite
             elif event.key() == Qt.Key_Left and modifiers == Qt.ControlModifier:
                 self.handle_move_cursor_left()
             elif event.key() == Qt.Key_Right and modifiers == Qt.ControlModifier:
                 self.handle_move_cursor_right()
+
+            # saut de mot vers le debut ou fin d'une ligne
             elif event.key() == Qt.Key_Home:
                 self.handle_move_start_line()
             elif event.key() == Qt.Key_End:
@@ -84,23 +96,29 @@ class CustomTextEdit(QTextEdit):
                 self.handle_selectionR()
             elif event.key() == Qt.Key_Left and modifiers == Qt.ShiftModifier:
                 self.handle_selectionL()
+            
+            # selectionne tout le document
             elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
                 self.handle_fullselection()
+            
+            # tab -> le modele n'arrive pas a comprendre les modifications liees a TAB
             elif event.key() == Qt.Key_Tab :
                 self.handle_tab()
-            # simple movements 
+            # simple movements (droite / gauche)
             elif event.key() == Qt.Key_Right :
                 self.handle_goRightSingle()
             elif event.key() == Qt.Key_Left :
                 self.handle_goLeftSingle()
 
-        
+        # supprimer un mot
         if event.key() == Qt.Key_Backspace and modifiers == Qt.ControlModifier:
             self.handle_backspace()
-        elif event.key() == Qt.Key_U and modifiers == Qt.ControlModifier:
-            self.handle_underline()
-        elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
-            self.handle_bold()
+        # souligne
+        # elif event.key() == Qt.Key_U and modifiers == Qt.ControlModifier:
+        #     self.handle_underline()
+        # # met en gras
+        # elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
+        #     self.handle_bold()
         
         
 
@@ -240,7 +258,7 @@ class MainWindow(QMainWindow):
         self.text_edit = CustomTextEdit(self,onWrite = onWrite)
 
         #self.showMaximized()
-        self.setFixedSize(800,800)
+        self.setMinimumSize(800,800)
         self.fontBox = QSpinBox()
 
         self.statusBar = QStatusBar()
@@ -257,6 +275,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.text_edit)
         layout.addWidget(self.word_frequency_widget)
         self.setCentralWidget(central_widget)
+        layout.setContentsMargins(100,11,100,0)
 
         search_action = QAction(QIcon(), "Search", self)
         search_action.setShortcut("Ctrl+F")

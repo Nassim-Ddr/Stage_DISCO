@@ -12,64 +12,85 @@ import pandas as pd
 
 # Some sort of decision tree manually done (only for selection so not an issue)
 class HardCodedModel():
-    def predict(self, oldState, newState, texteditor):
+    def __init__(self,texteditor,historySize):
+        self.limit = historySize
+        self.texteditor = texteditor
+    def predict(self, oldState, newState):
         #inputData, label = inputData[:len(inputData)-1], inputData[-1]
         #past, present = inputData[:5], inputData[5:]
+        # 2 Vecteurs d'etats
         past, present = oldState,newState
+        # oldPos : la position passee, 
+        # oldline1 : ligne du curseur precedemment, 
+        # oldcolumn1 : pareil mais pour la colonne, 
+        # oldselStart1 : position de départ de la selection passee
+        # oldselEnd1 : position de fin de la selection passee
+        # toutes les valeurs sont numeriques
         oldPos, oldline1, oldcolumn1, oldselStart1, oldselEnd1= past
+        # positions pour l'etat courant
         newPos, newLine1, newColumn1, newselStart1, newselEnd1 = present
+
         #print(f'Old selection = {oldselStart1} {oldselEnd1} and new Selection = {newselStart1} {newselEnd1}')
 
-        cursor = texteditor.textCursor()
-
-        if newPos == cursor.End and (newselStart1 == 0 and newselEnd1 == cursor.End):
-            if newselStart1 != oldselStart1 or newselEnd1 != oldselEnd1 :
-                return 
-            else:
+        cursor = self.texteditor.textCursor()
+        
+        # Si tout le texte est selectionne, on peut suggerer la commande de selectionner tout le document
+        end = len(self.texteditor.toPlainText())
+        if (newselStart1 == 0 and newselEnd1 == end):
                 return "CTRL + A (SelectAll)"
 
         # On va plus loin dans le document
         isEnd = self.check_cursorEnd(cursor)
         isStart = self.check_cursorStart(cursor)
-        if oldPos < newPos and newPos-oldPos > 3 :      
-            if oldselStart1 == newselStart1 and oldselEnd1 < newselEnd1:
-                if isEnd :
-                    return "CTRL + Shift + Fin (End) Button"
-                else :
-                    # l'utilisateur décide de deselectionner des elements en plus sur une ligne
+        if oldPos < newPos :  
+            if newPos-oldPos > 3 :
+                if oldselStart1 == newselStart1 and oldselEnd1 < newselEnd1:
+                    if isEnd :
+                        # fin de ligne
+                        return "CTRL + Shift + Fin (End) Button"
+                    else :
+                        # l'utilisateur décide de deselectionner des elements en plus sur une ligne
+                        return "CTRL + Shift + Right"
+                elif oldselEnd1 == newselEnd1 and oldselStart1 < newselStart1 :
+                    # selectionner des elements sur la ligne
                     return "CTRL + Shift + Right"
-            elif oldselEnd1 == newselEnd1 and oldselStart1 < newselStart1 :
-                return "CTRL + Shift + Right"
-            elif isEnd :
-                return "CTRL + Fin (End)"
-            else:
-                # déplacement vers la droite
-                return "CTRL + Right"
+                elif isEnd :
+                    # deplacement vers la fin de la ligne
+                    return "CTRL + Fin (End)"
+                else:
+                    # déplacement vers la droite
+                    return "CTRL + Right"
         elif oldPos == newPos :
-            return "rien ne s'est passe ou alors action inverse"
+            # rien ne s'est passe
+            return 
         # La selection se fait de droite à gauche
-        elif oldPos > newPos and oldPos - newPos > 3 :
-            # dans le cas où la selection se passe sur la meme ligne (si la ligne est differente, l'utilisateur se deplace vers la droite)  
-            if oldselStart1 == newselStart1 and oldselEnd1 > newselEnd1 :
-                if isEnd :
-                    return "CTRL + Shift + Home"
-                else :
-                    # l'utilisateur décide de selectionner un element (un mot ou groupe de lettres, comment differencier son intention ?)
-                    return "CTRL + Shift + Left"
-            elif oldselEnd1 == newselEnd1 and oldselStart1 > newselStart1 :
-                if isStart :
-                    return "CTRL + Shift + Home"
-                else :
-                    return "CTRL + Shift + Left"
+        elif oldPos > newPos :
+            if oldPos - newPos > 3 and oldPos-newPos < self.limit-1 :
+                # dans le cas où la selection se passe sur la meme ligne (si la ligne est differente, l'utilisateur se deplace vers la droite)  
+                if oldselStart1 == newselStart1 and oldselEnd1 > newselEnd1 :
+                    if isEnd :
+                        # L'utilisateur selectionne/deselectionne la ligne depuis sa position
+                        return "CTRL + Shift + Home"
+                    else :
+                        # l'utilisateur décide de selectionner un element (un mot ou groupe de lettres, comment differencier son intention ?)
+                        return "CTRL + Shift + Left"
+                elif oldselEnd1 == newselEnd1 and oldselStart1 > newselStart1 :
+                    if isStart :
+                        # selectionne tout depuis la position vers le debut de la ligne
+                        return "CTRL + Shift + Home"
+                    else :
+                        # selectionne un mot vers la gauche
+                        return "CTRL + Shift + Left"
 
-            elif isStart :
-                return "CTRL + Home"
-            else :
-                # déplacement vers la gauche
-                return "CTRL + Left"
+                elif isStart :
+                    # deplacement vers le debut de ligne
+                    return "CTRL + Home"
+                else :
+                    # déplacement vers la gauche
+                    return "CTRL + Left"
     
     def check_cursorEnd(self,cursor):
-
+        # verifie si le curseur se trouve a la fin d'une ligne
         if cursor.columnNumber() == cursor.block().length() - 1 :
             return True
         else :
@@ -77,7 +98,7 @@ class HardCodedModel():
         
     
     def check_cursorStart(self,cursor):
-
+        # verifie si le curseur se trouve au debut d'une ligne
         if cursor.columnNumber() == 0 :
             return True
         else :
