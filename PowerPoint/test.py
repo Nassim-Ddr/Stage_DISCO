@@ -28,8 +28,7 @@ class TitleBar(QDialog):
         }
         QToolButton:hover{
             Background: #dc5939;
-            font-size:11px;
-        }
+            font-size:11px;}
         """
         self.setAutoFillBackground(True)
         self.setBackgroundRole(QPalette.Highlight)
@@ -39,10 +38,14 @@ class TitleBar(QDialog):
         self.maximize=QToolButton(self)
         self.maximize.setIcon(QIcon("icons/resize.png"))
         close=QToolButton(self)
+        close.setStyleSheet("""QToolButton:hover{
+            Background: #e81123;
+            font-size:11px;
+        }""")
         close.setIcon(QIcon("icons/close.png"))
-        self.minimize.setMinimumHeight(20)
-        close.setMinimumHeight(20)
-        self.maximize.setMinimumHeight(20)
+        self.minimize.setMinimumSize(40,40)
+        close.setMinimumSize(40,40)
+        self.maximize.setMinimumSize(40,40)
         label=QLabel(self)
         label.setText("PowerPoint")
         self.setWindowTitle("Window Title")
@@ -53,6 +56,7 @@ class TitleBar(QDialog):
         hbox.addWidget(close)
         hbox.insertStretch(1,500)
         hbox.setSpacing(0)
+        hbox.setContentsMargins(10,0,0,0)
         self.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Fixed)
         self.maxNormal=False
         close.clicked.connect(self.close)
