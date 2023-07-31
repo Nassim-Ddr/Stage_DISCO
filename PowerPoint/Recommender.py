@@ -13,6 +13,7 @@ from PIL import Image
 
 from PyQt5.QtPrintSupport import *
 import matplotlib.pyplot as plt
+import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
@@ -40,8 +41,10 @@ class Recommender(QMainWindow):
         # Affiche état
         self.C = FigureCanvas(plt.figure( figsize=(5, 3)))
         layout.addWidget(self.C)
-        self.ax = self.C.figure.subplots()
-        self.ax.axis('off')
+        self.ax1, self.ax2, self.ax3 = self.C.figure.subplots(1,3)
+        self.ax1.axis('off')
+        self.ax2.axis('off')
+        self.ax3.axis('off')
 
         # variable du recommender
         self.model = Model(model, ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
@@ -79,13 +82,8 @@ class Recommender(QMainWindow):
             index = np.argmax(preds_conf[:,1])
             pred_command, confiance = preds_conf[index]
             self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
+            self.showState(self.memory[index], state)
             
-            # display transition between state
-            self.ax.clear()
-            self.ax.imshow(state)
-            self.ax.axis('off')
-            self.C.draw()
-        
         # ajoute l'etat precedent
         # supprime si la liste est trop grande
         self.memory.append(state)
@@ -99,6 +97,20 @@ class Recommender(QMainWindow):
         image = Image.open("./images/state.jpg")
         image = np.asarray(image)
         return image
+    
+    def showState(self, a, b):
+        # display transition between b
+        for ax, title in zip([self.ax1,  self.ax2,  self.ax3],  ["Before", "After", 'Input to Model']):
+            ax.clear()
+            ax.tick_params(left = False, right = False , labelleft = False ,
+                           labelbottom = False, bottom = False)
+            ax.title.set_text(title)
+
+        self.ax1.imshow(a)
+        self.ax2.imshow(b)
+        self.ax3.imshow(self.model.process.getOnlyMovingObject(a,b))
+        self.C.draw()
+
     
     
 class Model():
@@ -117,7 +129,7 @@ class Model():
     # a, b (np.array)
     # return (prediction, confiance)
     def predict(self, a, b):
-        a, b = self.process.getOnlyMovingObject(a,b)
+        b = self.process.getOnlyMovingObject(a,b)
         s = Image.fromarray(b)
         x = self.image_transform(s).reshape((1,3,64,64))
         output = self.model(x)
@@ -167,7 +179,7 @@ class Preprocessing():
         r = b.copy()
         x,y = np.where(np.mean(a-b, axis=2)<=0)
         r[x,y,:] = 255
-        return a, r
+        return r
 
 
 

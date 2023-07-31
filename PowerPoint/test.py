@@ -1,59 +1,143 @@
 import sys
-import time
-
-import numpy as np
-
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtPrintSupport import *
 from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from MainWindow import *
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib.pyplot as plt
+class TitleBar(QDialog):
+    def __init__(self, parent=None):
+        QWidget.__init__(self, parent)
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        css = """
+        QWidget{
+            Background: #b8442c;
+            color:white;
+            font:12px bold;
+            font-weight:bold;
+            border-radius: 1px;
+            height: 11px;
+        }
+        QDialog{
+            font-size:12px;
+            color: black;
 
-class Window(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.count = 0
-        self.color_text = "blue"
-        self.container = QWidget()
-        layout = QVBoxLayout( self.container )
-        
-        # A Qwidget embedding a matplotlib figure
-        self.canvas  = FigureCanvas( plt.figure( figsize=(5, 3)) )
-        layout.addWidget( self.canvas )
-        
-        # add the matplotlib toolbar
-        self.addToolBar( NavigationToolbar( self.canvas, self ) )
-        
-        self.button = QPushButton( "red" )
-        self.button.clicked.connect( self.update_canvas )
-        layout.addWidget( self.button )
+        }
+        QToolButton{
+            Background:#b8442c;
+            font-size:11px;
+        }
+        QToolButton:hover{
+            Background: #dc5939;
+            font-size:11px;
+        }
+        """
+        self.setAutoFillBackground(True)
+        self.setBackgroundRole(QPalette.Highlight)
+        self.setStyleSheet(css) 
+        self.minimize=QToolButton(self)
+        self.minimize.setIcon(QIcon("icons/remove.png"))
+        self.maximize=QToolButton(self)
+        self.maximize.setIcon(QIcon("icons/resize.png"))
+        close=QToolButton(self)
+        close.setIcon(QIcon("icons/close.png"))
+        self.minimize.setMinimumHeight(20)
+        close.setMinimumHeight(20)
+        self.maximize.setMinimumHeight(20)
+        label=QLabel(self)
+        label.setText("PowerPoint")
+        self.setWindowTitle("Window Title")
+        hbox=QHBoxLayout(self)
+        hbox.addWidget(label)
+        hbox.addWidget(self.minimize)
+        hbox.addWidget(self.maximize)
+        hbox.addWidget(close)
+        hbox.insertStretch(1,500)
+        hbox.setSpacing(0)
+        self.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Fixed)
+        self.maxNormal=False
+        close.clicked.connect(self.close)
+        self.minimize.clicked.connect(self.showSmall)
+        self.maximize.clicked.connect(self.showMaxRestore)
 
-        self.ax = self.canvas.figure.subplots()
-        
-        self.update_canvas()
-        
-        self.setCentralWidget( self.container )
+    def showSmall(self):
+        box.showMinimized()
 
-    def update_canvas(self):
-        self.count += 1
-        
-        self.ax.clear()
-        t = np.linspace( 0, 10, 101 )
-        self.ax.plot( t, np.sin(t + self.count ), c= self.color_text )
-        self.ax.set_xlabel( "Time (s)" )
-        self.ax.set_ylabel( "Temperature (celcius)" )
-        self.canvas.draw()
-        self.canvas.repaint()  # required for MACOS
-        
-        self.color_text = "blue" if self.color_text == "red" else "red"
-        self.button.setText( self.color_text )    
+    def showMaxRestore(self):
+        if(self.maxNormal):
+            box.showNormal()
+            self.maxNormal= False
+            self.maximize.setIcon(QIcon("icons/resize.png"))
+            print('1')
+        else:
+            box.showMaximized()
+            self.maxNormal=  True
+            print('2')
+            self.maximize.setIcon(QIcon("icons/resize.png"))
+
+    def close(self):
+        box.close()
+
+    def mousePressEvent(self,event):
+        if event.button() == Qt.LeftButton:
+            box.moving = True 
+            box.offset = event.pos()
+
+    def mouseMoveEvent(self,event):
+        if box.moving: 
+            box.move(event.globalPos()-box.offset)
 
 
-if __name__ == "__main__":
-    qapp = QApplication(sys.argv)
-    win = Window()
-    win.show()
-    qapp.exec_()
+class Frame(QFrame):
+    def __init__(self, parent=None):
+        QFrame.__init__(self, parent)
+        self.m_mouse_down= False
+        self.setFrameShape(QFrame.StyledPanel)
+        css = """
+        """
+        self.setStyleSheet(css) 
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setMouseTracking(True)
+        self.m_titleBar= TitleBar(self)
+        self.m_content= QWidget(self)
+        vbox=QVBoxLayout(self)
+        vbox.addWidget(self.m_titleBar)
+        vbox.setContentsMargins(0,0,0,0)
+        vbox.setSpacing(0)
+        layout=QVBoxLayout(self)
+        layout.addWidget(self.m_content)
+        #layout.setContentsMargins(5,5,5,5)
+        layout.setSpacing(0)
+        vbox.addLayout(layout)
+        
+        # Allows you to access the content area of the frame
+        # where widgets and layouts can be added
+        w = MainWindow()
+        vbox.addWidget(w)
+
+
+    def contentWidget(self):
+        return self.m_content
+
+    def titleBar(self):
+        return self.m_titleBar
+
+    def mousePressEvent(self,event):
+        self.m_old_pos = event.pos()
+        self.m_mouse_down = event.button()== Qt.LeftButton
+
+    def mouseMoveEvent(self,event):
+        x=event.x()
+        y=event.y()
+
+    def mouseReleaseEvent(self,event):
+        m_mouse_down=False
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    box = Frame()
+    box.move(60,60)
+    l=QVBoxLayout(box.contentWidget())
+    l.setContentsMargins(0,0,0,0)
+    box.show()
+    app.exec_()

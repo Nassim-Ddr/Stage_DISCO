@@ -9,7 +9,7 @@ import resources
 class MainWindow(QMainWindow):
     def __init__(self, parent = None ):
         QMainWindow.__init__(self, parent )
-        self.resize(600, 500)
+        self.resize(10000, 1000)
         self.setFocus()
         self.setWindowTitle("PowerPoint")
 
@@ -28,9 +28,10 @@ class MainWindow(QMainWindow):
         w.setCentralWidget(self.canvas)
         layout.addWidget(w)
         layout.addWidget(self.textEdit)
+        layout.setContentsMargins(100,11,100,11)
 
         bar = self.menuBar()
-        #bar.setStyleSheet("background-color: #b8442c; color: white")
+        bar.setStyleSheet("background-color: #b8442c; color: white")
         bar.resize(600,100)
         # File Menu
         fileMenu = bar.addMenu("File")

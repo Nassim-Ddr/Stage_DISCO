@@ -11,7 +11,7 @@ class Canvas(QWidget):
         super(Canvas,self).__init__()
         self.parent = parent
         # configurations du canvas
-        self.setMinimumSize(300,300)
+        self.setMinimumSize(600,300)
         self.setContentsMargins(10,10,10,10)
         
         # attributs d'affichage
@@ -35,7 +35,6 @@ class Canvas(QWidget):
         # Logger
         self.logger = Logger('data/data.csv')
     
-
     def addImage(self):
         # tuple of : (QImage, (x,y))
         fileName = QFileDialog.getOpenFileName( self,"Open Image", "./", "Images (*.png *.xpm *.jpg)")[0]
