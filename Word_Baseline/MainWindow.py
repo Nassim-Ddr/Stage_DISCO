@@ -307,6 +307,7 @@ class MainWindow(QMainWindow):
 
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
+        self.statusBar.showMessage(f"Nombre de caractères : {len(self.text_edit.toPlainText())}")
         self.text_edit.textChanged.connect(lambda: self.statusBar.showMessage(f"Nombre de caractères : {len(self.text_edit.toPlainText())}"))
         self.actions = []
 
@@ -405,6 +406,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.fontBox)
 
         # Connect the text changed signal to update the word frequency
+        self.update_word_frequency()
         self.text_edit.textChanged.connect(self.update_word_frequency)
 
     def update_word_frequency(self):
