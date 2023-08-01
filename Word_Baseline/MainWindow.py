@@ -16,7 +16,7 @@ import random
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
-    customTextChanged = pyqtSignal(str)
+    # customTextChanged = pyqtSignal(str)
     def __init__(self, parent= None,onWrite = False):
         super().__init__(parent)
         # isWrite = True -> on cree un csv contenant les donnees
@@ -31,8 +31,9 @@ class CustomTextEdit(QTextEdit):
         cursor = self.textCursor()
         cursor.setPosition(mid,QTextCursor.MoveAnchor)
         self.updated("")
-        if not onWrite :
-            self.textChanged.connect(self.updated)
+        # if not onWrite :
+        #     self.textChanged.connect(self.updated)
+        #     self.customTextChanged.connect(self.keyPressEvent)
 
 
         # Fait en sorte que le cursor soit bien au milieu (le curseur est bien place)
@@ -55,15 +56,31 @@ class CustomTextEdit(QTextEdit):
             return
         super().keyPressEvent(event)
 
+        keyValue = event.text()
+
         # Les differents comportements
 
-        # Detection que lorsque le logiciel est en live 
+        
 
+        # supprimer un mot
+        if event.key() == Qt.Key_Backspace and modifiers == Qt.ControlModifier:
+            #print("Passing here")
+            self.handle_backspace()
+            return
+        # souligne
+        # elif event.key() == Qt.Key_U and modifiers == Qt.ControlModifier:
+        #     self.handle_underline()
+        # # met en gras
+        # elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
+        #     self.handle_bold()
+
+        # Detection que lorsque le logiciel est en live 
         if not self.isWrite:
             # if event.key() == Qt.Key_X and modifiers == Qt.ControlModifier:
             #     self.handle_cut()
             if event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
                 self.handle_paste()
+                return
             # elif event.key() == Qt.Key_Z and modifiers == Qt.ControlModifier:
             #     self.handle_undo()
             # elif event.key() == Qt.Key_Y and modifiers == Qt.ControlModifier:
@@ -72,53 +89,71 @@ class CustomTextEdit(QTextEdit):
             # selection de mot
             elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Left:
                 self.handle_WordSelectionL()
+                return
             elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Right:
                 self.handle_WordSelectionR()
+                return
             
             # copier
             # elif event.key() == Qt.Key_C and modifiers == Qt.ControlModifier:
             #     self.handle_copy()
+            
 
             # saut d'un mot vers la gauche/droite
             elif event.key() == Qt.Key_Left and modifiers == Qt.ControlModifier:
                 self.handle_move_cursor_left()
+                return
             elif event.key() == Qt.Key_Right and modifiers == Qt.ControlModifier:
                 self.handle_move_cursor_right()
+                return
+            
+
+            # select line
+            elif event.key() == Qt.Key_Home and modifiers == Qt.ShiftModifier:
+                self.handle_selectLinetoStart()
+                return
+            elif event.key() == Qt.Key_End and modifiers == Qt.ShiftModifier:
+                self.handle_selectLinetoEnd()
+                return
 
             # saut de mot vers le debut ou fin d'une ligne
             elif event.key() == Qt.Key_Home:
                 self.handle_move_start_line()
+                return
             elif event.key() == Qt.Key_End:
                 self.handle_move_end_line()
+                return
             
             # select single character
             elif event.key() == Qt.Key_Right and modifiers == Qt.ShiftModifier:
                 self.handle_selectionR()
+                return
             elif event.key() == Qt.Key_Left and modifiers == Qt.ShiftModifier:
                 self.handle_selectionL()
+                return
             
             # selectionne tout le document
             elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
                 self.handle_fullselection()
+                return
             
             # tab -> le modele n'arrive pas a comprendre les modifications liees a TAB
             elif event.key() == Qt.Key_Tab :
                 self.handle_tab()
+                return
             # simple movements (droite / gauche)
             elif event.key() == Qt.Key_Right :
                 self.handle_goRightSingle()
+                return
             elif event.key() == Qt.Key_Left :
                 self.handle_goLeftSingle()
-
-        # supprimer un mot
-        if event.key() == Qt.Key_Backspace and modifiers == Qt.ControlModifier:
-            self.handle_backspace()
-        # souligne
-        # elif event.key() == Qt.Key_U and modifiers == Qt.ControlModifier:
-        #     self.handle_underline()
-        # # met en gras
-        # elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
-        #     self.handle_bold()
+                return
+            
+            # On prend en compte les touches simples
+            elif keyValue.isalpha() or keyValue.isdigit() or keyValue.isprintable() or event.key() == Qt.Key_Backspace :
+                self.handle_Letter()
+                return
+        
         
         
 
@@ -136,7 +171,7 @@ class CustomTextEdit(QTextEdit):
     # on groupe copier coller
     def handle_paste(self):
         #print("J'ai collé")
-        self.updated("copyPaste")
+        self.updated("CopyPaste")
 
     def handle_cut(self):
         #print("J'ai coupé")
@@ -151,20 +186,20 @@ class CustomTextEdit(QTextEdit):
     def handle_move_cursor_left(self):
         #print(self.textCursor().position())
         #print("je vais a gauche ",self.textCursor().position())
-        self.updated("moveLeft")
+        self.updated("CTRL + Left")
 
     def handle_move_cursor_right(self):
         #print(self.textCursor().position())
         #print("je vais à droite ",self.textCursor().position())
-        self.updated("moveRight") 
+        self.updated("CTRL + Right") 
 
     def handle_move_start_line(self):
         #print("going to the start of the line")
-        self.updated("moveStartOfLine")
+        self.updated("Home")
 
     def handle_move_end_line(self):
         #print("going to the end of the line")
-        self.updated("moveEndOfLine")
+        self.updated("Fin (End)")
     
     def handle_selectionR(self):
         cursor = self.textCursor()
@@ -184,19 +219,19 @@ class CustomTextEdit(QTextEdit):
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
 
         #print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
-        self.updated("selectRightWord")
+        self.updated("CTRL + Shift + Right")
 
     def handle_WordSelectionL(self):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("selectLeftWord")
+        self.updated("CTRL + Shift + Left")
         
 
     def handle_fullselection(self):
         cursor = self.textCursor()
         #print("full selection")
         
-        self.updated("selectAllDoc")
+        self.updated("CTRL+ A (SelectAll)")
         #print("after : ",cursor.blockNumber(),cursor.columnNumber())
     
     def handle_goLeftSingle(self):
@@ -204,22 +239,31 @@ class CustomTextEdit(QTextEdit):
     
     def handle_goRightSingle(self):
         self.updated()
+    
+    def handle_selectLinetoStart(self):
+        self.updated("Shift + Home")
+    
+    def handle_selectLinetoEnd(self):
+        self.updated("Shift + End")
 
     
     # Others ---------------------------------------------------------------------
 
     def handle_backspace(self):
         #print("Supprimer le mot")
-        self.updated("deleteWord")
+        self.updated("WordDel")
     
     
     def handle_replace(self):
-        self.updated("replace")
+        self.updated("Search&Replace")
         #print("replace")
     
     
     def handle_tab(self):
         self.updated("tabbing")
+    
+    def handle_Letter(self):
+        self.updated("WriteWord")
 
 
     # The update function that is called if command = None then we are online otherwise we are making a dataset
@@ -653,7 +697,7 @@ if __name__ == "__main__":
 
     window = MainWindow(onWrite = False)
     window.show()
-    R = Recommender("./models/bowModelGood",hardCoded = True)
+    R = Recommender("./models/bowModelGood",window.text_edit,hardCoded = True)
     window.text_edit.logger.assistant = R
     R.show()
     #actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]

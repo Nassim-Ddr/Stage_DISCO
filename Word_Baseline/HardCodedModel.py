@@ -15,6 +15,18 @@ class HardCodedModel():
     def __init__(self,texteditor,historySize):
         self.limit = historySize
         self.texteditor = texteditor
+        self.hardCodedCommands = ["CTRL+ A (SelectAll)", 
+        "Shift + Fin (End) Button", 
+        "CTRL + Shift + Right", 
+        "Fin (End)", 
+        "CTRL + Right", 
+        "Shift + Home", 
+        "CTRL + Shift + Left",
+        "Home",
+        "CTRL + Left"
+        ]
+        
+        
     def predict(self, oldState, newState):
         #inputData, label = inputData[:len(inputData)-1], inputData[-1]
         #past, present = inputData[:5], inputData[5:]
@@ -37,7 +49,8 @@ class HardCodedModel():
         # Si tout le texte est selectionne, on peut suggerer la commande de selectionner tout le document
         end = len(self.texteditor.toPlainText())
         if (newselStart1 == 0 and newselEnd1 == end):
-                return "CTRL + A (SelectAll)"
+                # Si l'utilisateur a utilise la commande un certain nombre de fois on n'a plus besoin de demander
+                return self.hardCodedCommands[0]
 
         # On va plus loin dans le document
         isEnd = self.check_cursorEnd(cursor)
@@ -47,47 +60,47 @@ class HardCodedModel():
                 if oldselStart1 == newselStart1 and oldselEnd1 < newselEnd1:
                     if isEnd :
                         # fin de ligne
-                        return "CTRL + Shift + Fin (End) Button"
+                        return self.hardCodedCommands[1]
                     else :
                         # l'utilisateur décide de deselectionner des elements en plus sur une ligne
-                        return "CTRL + Shift + Right"
+                        return self.hardCodedCommands[2]
                 elif oldselEnd1 == newselEnd1 and oldselStart1 < newselStart1 :
                     # selectionner des elements sur la ligne
-                    return "CTRL + Shift + Right"
+                    return self.hardCodedCommands[2]
                 elif isEnd :
                     # deplacement vers la fin de la ligne
-                    return "CTRL + Fin (End)"
+                    return self.hardCodedCommands[3]
                 else:
                     # déplacement vers la droite
-                    return "CTRL + Right"
+                    return self.hardCodedCommands[4]
         elif oldPos == newPos :
             # rien ne s'est passe
             return 
         # La selection se fait de droite à gauche
         elif oldPos > newPos :
-            if oldPos - newPos > 3 and oldPos-newPos < self.limit-1 :
+            if oldPos - newPos > 3 :
                 # dans le cas où la selection se passe sur la meme ligne (si la ligne est differente, l'utilisateur se deplace vers la droite)  
                 if oldselStart1 == newselStart1 and oldselEnd1 > newselEnd1 :
                     if isEnd :
                         # L'utilisateur selectionne/deselectionne la ligne depuis sa position
-                        return "CTRL + Shift + Home"
+                        return self.hardCodedCommands[5]
                     else :
                         # l'utilisateur décide de selectionner un element (un mot ou groupe de lettres, comment differencier son intention ?)
-                        return "CTRL + Shift + Left"
+                        return self.hardCodedCommands[6]
                 elif oldselEnd1 == newselEnd1 and oldselStart1 > newselStart1 :
                     if isStart :
                         # selectionne tout depuis la position vers le debut de la ligne
-                        return "CTRL + Shift + Home"
+                        return self.hardCodedCommands[5]
                     else :
                         # selectionne un mot vers la gauche
-                        return "CTRL + Shift + Left"
+                        return self.hardCodedCommands[6]
 
                 elif isStart :
                     # deplacement vers le debut de ligne
-                    return "CTRL + Home"
+                    return self.hardCodedCommands[7]
                 else :
                     # déplacement vers la gauche
-                    return "CTRL + Left"
+                    return self.hardCodedCommands[8]
     
     def check_cursorEnd(self,cursor):
         # verifie si le curseur se trouve a la fin d'une ligne

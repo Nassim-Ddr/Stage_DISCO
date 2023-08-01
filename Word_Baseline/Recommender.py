@@ -34,21 +34,58 @@ class Recommender(QWidget):
         self.modelHard = HardCodedModel(texteditor,historySize=max_size_memory)
         # variable du recommender
         # self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
-        self.model = Model(model, ["WriteWord","CopyPaste","WordDel","Search&Replace"])
+        self.commands = ["WriteWord","CopyPaste","WordDel","Search&Replace"]
+        self.model = Model(model, self.commands)
+        self.hardCodedCommands = ["CTRL+ A (SelectAll)", 
+        "Shift + Fin (End) Button", 
+        "CTRL + Shift + Right", 
+        "Fin (End)", 
+        "CTRL + Right", 
+        "Shift + Home", 
+        "CTRL + Shift + Left",
+        "Home",
+        "CTRL + Left"
+        ]
+        self.recommendThreshold = np.zeros(len(self.hardCodedCommands))
+        self.recommendThresholdML = np.zeros(4)
+        self.stopRecom = 2
+        
             
 
-    def update(self, state,stateHardcode,texteditor):
+    def update(self, state,stateHardcode,texteditor,command):
         #state, label = state
         m_size = len(self.memory)
         ok = True
+        # on compare l'etat courant avec les etats passes
         for i in range(m_size): 
             s = self.memory[i]
-            if np.sum(s-state) == 0 :
+            sumstate = np.sum(s-state)
+            # si l'etat correspondant au vecteur bow ne change pas on ignore
+            if sumstate == 0 :
                 continue
             # cree la donnee a predire
             pred_command, confiance = self.model.predict(s, state) 
-            if (pred_command != "WriteWord"):
+            
+            # On veut eviter de continuer a recommander
+            ind = self.commands.index(pred_command)
+            if pred_command == command:
+                self.recommendThresholdML[ind] = self.recommendThresholdML[ind] + 1
+            
+            # la confiance doit etre > 95% (meme si ce n'est pas forcement un bon facteur)
+            if (pred_command != "WriteWord" and confiance > 0.95 and command != pred_command):
+                # Pour eviter de recommander des la premiere suppression de mot
+                if pred_command == "WordDel" and sumstate < 4 :
+                    break
+                
+                # nous avons suffisament recommande on n'affiche rien (cela sera pareil pour le modele hard code)
+                if self.recommendThresholdML[ind] >= self.stopRecom:
+                    self.setText("")
+                    ok = False
+                    break
+                
+                # on affiche la commande predite avec la confiance
                 self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
+            # on filtre le cas ou l'utilisateur ne fait que ecrire
             elif(pred_command == "WriteWord"):
                 if i != m_size-1:
                     continue
@@ -56,8 +93,10 @@ class Recommender(QWidget):
                     break
             ok = False
             break
+        # dans le cas ou aucune commande n'est trouvee avec le vecteur bow on essaye avec la selection
         if ok :
-            self.updateHardCoded(stateHardcode)
+            self.updateHardCoded(stateHardcode,command)
+        # sinon on memorise juste l'etat en retirant si la memoire est trop grande
         else :
             self.memory2.append(stateHardcode)
             m_size2 = len(self.memory2)
@@ -69,7 +108,7 @@ class Recommender(QWidget):
     
     
     
-    def updateHardCoded(self, state,texteditor):
+    def updateHardCoded(self, state,command):
         # state, label = state
         m_size = len(self.memory2)
         for i in range(m_size): 
@@ -79,7 +118,23 @@ class Recommender(QWidget):
             if i == m_size-1:
                 break
             # cree la donnee a predire
-            pred_command = self.modelHard.predict(s, state,texteditor) 
+
+            
+            pred_command = self.modelHard.predict(s, state)
+            if (pred_command is None):
+                continue
+            ind = self.hardCodedCommands.index(pred_command)
+
+            # Si la commande trouvee est deja utilisee suffisament on evite de recommander 
+            if self.recommendThreshold[ind] >= self.stopRecom:
+                self.setText("")
+                break
+
+            # On veut eviter de continuer a recommander trop
+            if pred_command == command:
+                ind = self.hardCodedCommands.index(pred_command)
+                self.recommendThreshold[ind] = self.recommendThreshold[ind] + 1
+            
             self.setText(pred_command)
             break
         # ajoute l'etat precedent
@@ -102,6 +157,7 @@ class Model():
     def predict(self, a,b):
         #x = np.hstack((a,b))
         x = a-b
+        # On doit formatter et normaliser (bonjour ScikitLearn)
         x = x.reshape((1,len(x)))
         anotherX = normalize(x)
         #anotherX = np.array([anotherX]).astype("float32")
@@ -115,6 +171,7 @@ class Model():
         print("index: ", index[0])
         return str(index), output.softmax(dim=1).max()
 
+# Le modele suivant est experimental, il existe potentiellement un meilleur modele
 class NeuralNet(nn.Module):
     def __init__(self):
         super().__init__()
