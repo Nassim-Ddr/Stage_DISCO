@@ -16,24 +16,31 @@ import random
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
+    # customTextChanged = pyqtSignal(str)
     def __init__(self, parent= None,onWrite = False):
         super().__init__(parent)
+        # isWrite = True -> on cree un csv contenant les donnees
         self.isWrite = onWrite
         self.logger = MapperLog2(onWrite)
         #self.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
         self.setPlainText("The sun rises, and the morning brings a new day. Birds chirp, filling the air with melody.\nI wake up, feel refreshed, and get ready for the day ahead. I put on a comfortable shirt and jeans,\nready for a walk in the nearby park. As I stroll through the park, I see many people enjoying the outdoors.\nSome jog, others walk their dog. A child plays on the playground, laughing and having fun. It's a pleasant sight.\nIn the park, there is a tall tree providing shade from the sun. I find a bench under a tree and sit down to read a book.\nThe story is captivating, and time passes quickly. I lose myself in the pages, engrossed in the tale.\nAfter a while, I decide to explore more of the park. There is a pond with a duck swimming peacefully.\nI watch it for a while before continuing on my way. A group of friends has a picnic nearby,\nsharing food and laughter. As I walk, I notice a beautiful flower in various colors - red, blue, yellow, and white.\nThe fragrance of the flower fills the air,\nmaking the stroll even more delightful. I take a moment to admire the beauty of nature.\nAfter a pleasant walk, I head to a café for lunch. The café is cozy, and the menu offers a variety of dishes.\nI order a sandwich and a refreshing lemonade. The food is delicious, and I enjoy the peaceful atmosphere of the café.\nIn the afternoon, I meet a friend at the library. We browse through books, discussing our favorite author and genre.\nThe library is a treasure trove of knowledge, and we leave with a few books to read later.\nLater in the evening, I attend a music concert in the park. The band plays lively tunes,\nand the crowd claps along. The atmosphere is festive, and everyone enjoys the performance.\nAs the sun sets, the sky changes colors, displaying shades of orange and pink. It's a beautiful sight.\nIn conclusion, spending time outdoors and appreciating the simple pleasure of life can bring joy and fulfillment.\nThe NGSL provides a wide range of words to express the experience and emotion we encounter every day.")
+        
+        # On va placer le curseur au centre du document
         text_length = len(self.toPlainText())
         mid = text_length//2
         cursor = self.textCursor()
         cursor.setPosition(mid,QTextCursor.MoveAnchor)
         self.updated("")
-        if not onWrite :
-            self.textChanged.connect(self.updated)
+        # if not onWrite :
+        #     self.textChanged.connect(self.updated)
+        #     self.customTextChanged.connect(self.keyPressEvent)
 
 
-        # Fait en sorte que le cursor soit bien au milieu
+        # Fait en sorte que le cursor soit bien au milieu (le curseur est bien place)
         self.setTextCursor(cursor)
         self.ensureCursorVisible()
+    
+    
 
     def keyPressEvent(self, event):
         # si on appuie sur CTRL
@@ -49,58 +56,104 @@ class CustomTextEdit(QTextEdit):
             return
         super().keyPressEvent(event)
 
+        keyValue = event.text()
+
         # Les differents comportements
 
+        
+
+        # supprimer un mot
+        if event.key() == Qt.Key_Backspace and modifiers == Qt.ControlModifier:
+            #print("Passing here")
+            self.handle_backspace()
+            return
+        # souligne
+        # elif event.key() == Qt.Key_U and modifiers == Qt.ControlModifier:
+        #     self.handle_underline()
+        # # met en gras
+        # elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
+        #     self.handle_bold()
+
         # Detection que lorsque le logiciel est en live 
-
         if not self.isWrite:
-            
-
-            if event.key() == Qt.Key_X and modifiers == Qt.ControlModifier:
-                self.handle_cut()
-            elif event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
+            # if event.key() == Qt.Key_X and modifiers == Qt.ControlModifier:
+            #     self.handle_cut()
+            if event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
                 self.handle_paste()
+                return
             # elif event.key() == Qt.Key_Z and modifiers == Qt.ControlModifier:
             #     self.handle_undo()
             # elif event.key() == Qt.Key_Y and modifiers == Qt.ControlModifier:
             #     self.handle_redo()
+
+            # selection de mot
             elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Left:
                 self.handle_WordSelectionL()
+                return
             elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Right:
                 self.handle_WordSelectionR()
-            elif event.key() == Qt.Key_C and modifiers == Qt.ControlModifier:
-                self.handle_copy()
+                return
+            
+            # copier
+            # elif event.key() == Qt.Key_C and modifiers == Qt.ControlModifier:
+            #     self.handle_copy()
+            
+
+            # saut d'un mot vers la gauche/droite
             elif event.key() == Qt.Key_Left and modifiers == Qt.ControlModifier:
                 self.handle_move_cursor_left()
+                return
             elif event.key() == Qt.Key_Right and modifiers == Qt.ControlModifier:
                 self.handle_move_cursor_right()
+                return
+            
+
+            # select line
+            elif event.key() == Qt.Key_Home and modifiers == Qt.ShiftModifier:
+                self.handle_selectLinetoStart()
+                return
+            elif event.key() == Qt.Key_End and modifiers == Qt.ShiftModifier:
+                self.handle_selectLinetoEnd()
+                return
+
+            # saut de mot vers le debut ou fin d'une ligne
             elif event.key() == Qt.Key_Home:
                 self.handle_move_start_line()
+                return
             elif event.key() == Qt.Key_End:
                 self.handle_move_end_line()
+                return
             
             # select single character
             elif event.key() == Qt.Key_Right and modifiers == Qt.ShiftModifier:
                 self.handle_selectionR()
+                return
             elif event.key() == Qt.Key_Left and modifiers == Qt.ShiftModifier:
                 self.handle_selectionL()
+                return
+            
+            # selectionne tout le document
             elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
                 self.handle_fullselection()
+                return
+            
+            # tab -> le modele n'arrive pas a comprendre les modifications liees a TAB
             elif event.key() == Qt.Key_Tab :
                 self.handle_tab()
-            # simple movements 
+                return
+            # simple movements (droite / gauche)
             elif event.key() == Qt.Key_Right :
                 self.handle_goRightSingle()
+                return
             elif event.key() == Qt.Key_Left :
                 self.handle_goLeftSingle()
-
+                return
+            
+            # On prend en compte les touches simples
+            elif keyValue.isalpha() or keyValue.isdigit() or keyValue.isprintable() or event.key() == Qt.Key_Backspace :
+                self.handle_Letter()
+                return
         
-        if event.key() == Qt.Key_Backspace and modifiers == Qt.ControlModifier:
-            self.handle_backspace()
-        elif event.key() == Qt.Key_U and modifiers == Qt.ControlModifier:
-            self.handle_underline()
-        elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
-            self.handle_bold()
         
         
 
@@ -118,7 +171,7 @@ class CustomTextEdit(QTextEdit):
     # on groupe copier coller
     def handle_paste(self):
         #print("J'ai collé")
-        self.updated("copyPaste")
+        self.updated("CopyPaste")
 
     def handle_cut(self):
         #print("J'ai coupé")
@@ -133,20 +186,20 @@ class CustomTextEdit(QTextEdit):
     def handle_move_cursor_left(self):
         #print(self.textCursor().position())
         #print("je vais a gauche ",self.textCursor().position())
-        self.updated("moveLeft")
+        self.updated("CTRL + Left")
 
     def handle_move_cursor_right(self):
         #print(self.textCursor().position())
         #print("je vais à droite ",self.textCursor().position())
-        self.updated("moveRight") 
+        self.updated("CTRL + Right") 
 
     def handle_move_start_line(self):
         #print("going to the start of the line")
-        self.updated("moveStartOfLine")
+        self.updated("Home")
 
     def handle_move_end_line(self):
         #print("going to the end of the line")
-        self.updated("moveEndOfLine")
+        self.updated("Fin (End)")
     
     def handle_selectionR(self):
         cursor = self.textCursor()
@@ -166,19 +219,19 @@ class CustomTextEdit(QTextEdit):
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
 
         #print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
-        self.updated("selectRightWord")
+        self.updated("CTRL + Shift + Right")
 
     def handle_WordSelectionL(self):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("selectLeftWord")
+        self.updated("CTRL + Shift + Left")
         
 
     def handle_fullselection(self):
         cursor = self.textCursor()
         #print("full selection")
         
-        self.updated("selectAllDoc")
+        self.updated("CTRL+ A (SelectAll)")
         #print("after : ",cursor.blockNumber(),cursor.columnNumber())
     
     def handle_goLeftSingle(self):
@@ -186,22 +239,31 @@ class CustomTextEdit(QTextEdit):
     
     def handle_goRightSingle(self):
         self.updated()
+    
+    def handle_selectLinetoStart(self):
+        self.updated("Shift + Home")
+    
+    def handle_selectLinetoEnd(self):
+        self.updated("Shift + End")
 
     
     # Others ---------------------------------------------------------------------
 
     def handle_backspace(self):
         #print("Supprimer le mot")
-        self.updated("deleteWord")
+        self.updated("WordDel")
     
     
     def handle_replace(self):
-        self.updated("replace")
+        self.updated("Search&Replace")
         #print("replace")
     
     
     def handle_tab(self):
         self.updated("tabbing")
+    
+    def handle_Letter(self):
+        self.updated("WriteWord")
 
 
     # The update function that is called if command = None then we are online otherwise we are making a dataset
@@ -240,11 +302,12 @@ class MainWindow(QMainWindow):
         self.text_edit = CustomTextEdit(self,onWrite = onWrite)
 
         #self.showMaximized()
-        self.setFixedSize(800,800)
+        self.setMinimumSize(800,800)
         self.fontBox = QSpinBox()
 
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
+        self.statusBar.showMessage(f"Nombre de caractères : {len(self.text_edit.toPlainText())}")
         self.text_edit.textChanged.connect(lambda: self.statusBar.showMessage(f"Nombre de caractères : {len(self.text_edit.toPlainText())}"))
         self.actions = []
 
@@ -257,6 +320,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.text_edit)
         layout.addWidget(self.word_frequency_widget)
         self.setCentralWidget(central_widget)
+        layout.setContentsMargins(100,11,100,0)
 
         search_action = QAction(QIcon(), "Search", self)
         search_action.setShortcut("Ctrl+F")
@@ -342,6 +406,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.fontBox)
 
         # Connect the text changed signal to update the word frequency
+        self.update_word_frequency()
         self.text_edit.textChanged.connect(self.update_word_frequency)
 
     def update_word_frequency(self):
@@ -634,7 +699,7 @@ if __name__ == "__main__":
 
     window = MainWindow(onWrite = False)
     window.show()
-    R = Recommender("./models/bowModelGood",hardCoded = True)
+    R = Recommender("./models/bowModelGood",window.text_edit,hardCoded = True)
     window.text_edit.logger.assistant = R
     R.show()
     #actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]

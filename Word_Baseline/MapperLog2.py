@@ -79,7 +79,7 @@ class MapperLog2():
         if not (self.onWrite) and self.assistant is not None :
             #self.assistant.update( (np.hstack((treated, treatedPos)),command) )
             #self.assistant.updateHardCoded(treatedPos,texteditor)
-            self.assistant.update(treated,treatedPos,texteditor)
+            self.assistant.update(treated,treatedPos,texteditor,command)
 
 def bag_of_words(text):
     # CountVectorizer cf. scikit-learn

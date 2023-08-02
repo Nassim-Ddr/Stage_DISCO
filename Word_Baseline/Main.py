@@ -2,6 +2,8 @@ import sys
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from MainWindow import *
+
 class TitleBar(QDialog):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
@@ -16,7 +18,6 @@ class TitleBar(QDialog):
             height: 11px;
         }
         QDialog{
-            Background-image:url('img/titlebar bg.png')
             font-size:12px;
             color: black;
 
@@ -26,7 +27,7 @@ class TitleBar(QDialog):
             font-size:11px;
         }
         QToolButton:hover{
-            Background: #FF00FF;
+            Background: #dc5939;
             font-size:11px;
         }
         """
@@ -34,17 +35,17 @@ class TitleBar(QDialog):
         self.setBackgroundRole(QPalette.Highlight)
         self.setStyleSheet(css) 
         self.minimize=QToolButton(self)
-        self.minimize.setIcon(QIcon("icons/undo.png"))
+        self.minimize.setIcon(QIcon("icons/remove.png"))
         self.maximize=QToolButton(self)
-        self.maximize.setIcon(QIcon("icons/bold.png"))
+        self.maximize.setIcon(QIcon("icons/resize.png"))
         close=QToolButton(self)
-        close.setIcon(QIcon("icons/cut.png"))
-        self.minimize.setMinimumHeight(10)
-        close.setMinimumHeight(10)
-        self.maximize.setMinimumHeight(10)
+        close.setIcon(QIcon("icons/close.png"))
+        self.minimize.setMinimumHeight(20)
+        close.setMinimumHeight(20)
+        self.maximize.setMinimumHeight(20)
         label=QLabel(self)
-        label.setText("Window Title")
-        self.setWindowTitle("Window Title")
+        label.setText("Word Like App")
+        self.setWindowTitle("Word Like App")
         hbox=QHBoxLayout(self)
         hbox.addWidget(label)
         hbox.addWidget(self.minimize)
@@ -65,13 +66,13 @@ class TitleBar(QDialog):
         if(self.maxNormal):
             box.showNormal()
             self.maxNormal= False
-            self.maximize.setIcon(QIcon("icons/underlined.png"))
+            self.maximize.setIcon(QIcon("icons/resize.png"))
             print('1')
         else:
             box.showMaximized()
             self.maxNormal=  True
             print('2')
-            self.maximize.setIcon(QIcon("icons/redo.png"))
+            self.maximize.setIcon(QIcon("icons/resize.png"))
 
     def close(self):
         box.close()
@@ -92,12 +93,6 @@ class Frame(QFrame):
         self.m_mouse_down= False
         self.setFrameShape(QFrame.StyledPanel)
         css = """
-        QFrame{
-            Background:  #D700D7;
-            color:white;
-            font:13px;
-            font-weight:bold;
-            }
         """
         self.setStyleSheet(css) 
         self.setWindowFlags(Qt.FramelessWindowHint)
@@ -106,15 +101,23 @@ class Frame(QFrame):
         self.m_content= QWidget(self)
         vbox=QVBoxLayout(self)
         vbox.addWidget(self.m_titleBar)
-        #vbox.setMargin(0)
+        vbox.setContentsMargins(0,0,0,0)
         vbox.setSpacing(0)
         layout=QVBoxLayout(self)
         layout.addWidget(self.m_content)
-        #layout.setMargin(5)
+        #layout.setContentsMargins(5,5,5,5)
         layout.setSpacing(0)
         vbox.addLayout(layout)
+        
         # Allows you to access the content area of the frame
         # where widgets and layouts can be added
+        window = MainWindow(onWrite = False)
+        
+        R = Recommender("./models/bowModelGood",window.text_edit,hardCoded = True)
+        window.text_edit.logger.assistant = R
+        R.show()
+        vbox.addWidget(window)
+
 
     def contentWidget(self):
         return self.m_content
@@ -139,10 +142,6 @@ if __name__ == '__main__':
     box = Frame()
     box.move(60,60)
     l=QVBoxLayout(box.contentWidget())
-    #l.setMargin(0)
-    edit=QLabel("""I would've did anything for you to show you how much I adored you
-But it's over now, it's too late to save our loveJust promise me you'll think of me
-Every time you look up in the sky and see a star 'cuz I'm  your star.""")
-    l.addWidget(edit)
+    l.setContentsMargins(0,0,0,0)
     box.show()
     app.exec_()
