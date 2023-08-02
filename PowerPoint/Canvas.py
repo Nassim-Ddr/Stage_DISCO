@@ -12,10 +12,10 @@ class Canvas(QWidget):
         self.parent = parent
         # configurations du canvas
         self.setMinimumSize(600,300)
-        self.setContentsMargins(10,10,10,10)
         
         # attributs d'affichage
-        self.bkcolor = QColor(Qt.blue) # couleur de fond et du contour (par defaut)
+        self.bkcolor = QColor(Qt.blue)
+        self.border_color = QColor(Qt.blue)
         self.width = 3 # taille du contour
         self.painterTranslation = QPoint(0,0) # vecteur de translation
         self.scale = 1 # zoom du canvas
@@ -88,9 +88,9 @@ class Canvas(QWidget):
             if self.mode=='draw':
                 self.cursorPos = (event.pos()/self.scale - self.painterTranslation)
                 if self.currentTool == "drawRect":
-                    self.Lforms.append(QRectPlus(QRect(self.pStart, self.pStart), self.bkcolor))
+                    self.Lforms.append(QRectPlus(QRect(self.pStart, self.pStart), self.bkcolor, self.border_color, self.width))
                 else:
-                    self.Lforms.append(QEllipse(QRect(self.pStart, self.pStart), self.bkcolor))
+                    self.Lforms.append(QEllipse(QRect(self.pStart, self.pStart), self.bkcolor, self.border_color, self.width))
             self.update()
                             
     def mouseMoveEvent(self, event):
@@ -126,6 +126,11 @@ class Canvas(QWidget):
                 self.pStart = self.cursorPos
             self.update()
 
+    def updated(self, command):
+        self.logger.update(self.getImage(), command, self.state())
+    
+    def state(self):
+        return [o.copy() for o in self.Lforms]
 
     def mouseReleaseEvent(self, event):
         # La figure est dessinee, on l'ajoute dans la liste d'objets
@@ -135,8 +140,9 @@ class Canvas(QWidget):
             self.corner_resize = None
             self.setter = None
             self.mode = 'select'
+            self.updated('Resize')
         elif self.mode == 'select':
-            self.logger.update(self.getImage(), 'Move')
+            self.updated('Move')
         self.pStart = None
         self.cursorPos = None
         self.update()
@@ -176,12 +182,22 @@ class Canvas(QWidget):
 
     def set_color(self, color):
         # On change la couleur de la figure selectionne ou des prochaines figures
-        if self.mode == 'select':
-            for o in self.selection.selected:
-                o.color = color
+        if self.mode == 'select' and not self.selection.isEmpty():
+            for o in self.selection.selected: o.color = color
             self.update()
+            self.updated('Change color')
         else:
             self.bkcolor = color
+
+    def set_color_border(self, color):
+        # On change la couleur de la figure selectionne ou des prochaines figures
+        if self.mode == 'select' and not self.selection.isEmpty():
+            for o in self.selection.selected: o.border_color = color
+            self.update()
+            self.updated('Change border color')
+        else:
+            self.border_color = color
+
     
     # Retourn le canvas en QImage
     def getImage(self):
@@ -307,25 +323,25 @@ class Canvas(QWidget):
         if not self.selection.isEmpty():
             self.alignTool.alignLeft(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignLeft', Lforms=self.Lforms)
+            self.updated('alignLeft')
 
     def alignRight(self):
         if not self.selection.isEmpty():
             self.alignTool.alignRight(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignRight', Lforms=self.Lforms)
+            self.updated('alignRight')
     
     def alignTop(self):
         if not self.selection.isEmpty():
             self.alignTool.alignTop(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignTop', Lforms=self.Lforms)
+            self.updated( 'alignTop')
 
     def alignBottom(self):
         if not self.selection.isEmpty():
             self.alignTool.alignBottom(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignBottom', Lforms=self.Lforms)
+            self.updated('alignBottom')
     
     def randomize(self):
         # create object not inside another object
