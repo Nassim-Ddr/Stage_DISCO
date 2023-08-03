@@ -94,6 +94,10 @@ class MainWindow(QtWidgets.QMainWindow):
         editMenu.addAction("&Align Right",  self.canvas.alignRight)
         editMenu.addAction("&Align Left",  self.canvas.alignLeft)
         editMenu.addAction("&Align Bottom",  self.canvas.alignBottom)
+        editMenu.addSeparator()
+        editMenu.addAction(QIcon(":/icons/foreground.png"), "&Foreground",  self.canvas.deplaceLast)
+        editMenu.addAction(QIcon(":/icons/background.png"), "&Background",  self.canvas.deplaceFirst)
+
 
 
         # Menu Color

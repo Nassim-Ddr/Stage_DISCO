@@ -16,6 +16,8 @@
     <file>icons/copy.png</file>
     <file>icons/paste.png</file>
     <file>icons/cut.png</file>
+    <file>icons/foreground.png</file>
+    <file>icons/background.png</file>
   </qresource>
 </RCC>
 

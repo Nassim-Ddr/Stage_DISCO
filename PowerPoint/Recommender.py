@@ -2,6 +2,11 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QLabel, QVBoxLayout
+from PyQt5.QtGui import QKeySequence, QColor, QPalette, QIcon, QPixmap
+from PyQt5.QtCore import Qt, QSize, QTimer, QPoint
+
+
 import numpy as np
 import torch
 from torch import nn

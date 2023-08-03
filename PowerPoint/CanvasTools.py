@@ -1,6 +1,8 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from PyQt5.QtGui import QPainter, QPen
+from PyQt5.QtCore import QRect, QPoint, Qt
 import numpy as np
 
 
@@ -136,6 +138,7 @@ class QPainterPlus(QPainter):
 class Selection():
     def __init__(self):
         self.selected = []
+        self.element = None
 
     def clear(self):
         self.selected.clear()
