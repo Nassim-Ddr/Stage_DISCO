@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from collections import Counter
-from MapperLog import MapperLog
 from MapperLog2 import MapperLog2
 
 from time import sleep
@@ -13,91 +12,170 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
 from Recommender import *
-
+import random 
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
-    def __init__(self, parent= None):
+    # customTextChanged = pyqtSignal(str)
+    def __init__(self, parent= None,onWrite = False):
         super().__init__(parent)
-        self.logger = MapperLog2(False)
-        self.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
+        # isWrite = True -> on cree un csv contenant les donnees
+        self.isWrite = onWrite
+        self.logger = MapperLog2(onWrite)
+        #self.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
+        self.setPlainText("The sun rises, and the morning brings a new day. Birds chirp, filling the air with melody.\nI wake up, feel refreshed, and get ready for the day ahead. I put on a comfortable shirt and jeans,\nready for a walk in the nearby park. As I stroll through the park, I see many people enjoying the outdoors.\nSome jog, others walk their dog. A child plays on the playground, laughing and having fun. It's a pleasant sight.\nIn the park, there is a tall tree providing shade from the sun. I find a bench under a tree and sit down to read a book.\nThe story is captivating, and time passes quickly. I lose myself in the pages, engrossed in the tale.\nAfter a while, I decide to explore more of the park. There is a pond with a duck swimming peacefully.\nI watch it for a while before continuing on my way. A group of friends has a picnic nearby,\nsharing food and laughter. As I walk, I notice a beautiful flower in various colors - red, blue, yellow, and white.\nThe fragrance of the flower fills the air,\nmaking the stroll even more delightful. I take a moment to admire the beauty of nature.\nAfter a pleasant walk, I head to a café for lunch. The café is cozy, and the menu offers a variety of dishes.\nI order a sandwich and a refreshing lemonade. The food is delicious, and I enjoy the peaceful atmosphere of the café.\nIn the afternoon, I meet a friend at the library. We browse through books, discussing our favorite author and genre.\nThe library is a treasure trove of knowledge, and we leave with a few books to read later.\nLater in the evening, I attend a music concert in the park. The band plays lively tunes,\nand the crowd claps along. The atmosphere is festive, and everyone enjoys the performance.\nAs the sun sets, the sky changes colors, displaying shades of orange and pink. It's a beautiful sight.\nIn conclusion, spending time outdoors and appreciating the simple pleasure of life can bring joy and fulfillment.\nThe NGSL provides a wide range of words to express the experience and emotion we encounter every day.")
+        
+        # On va placer le curseur au centre du document
         text_length = len(self.toPlainText())
         mid = text_length//2
         cursor = self.textCursor()
         cursor.setPosition(mid,QTextCursor.MoveAnchor)
+        self.updated("")
+        # if not onWrite :
+        #     self.textChanged.connect(self.updated)
+        #     self.customTextChanged.connect(self.keyPressEvent)
 
-        # Fait en sorte que le cursor soit bien au milieu
+
+        # Fait en sorte que le cursor soit bien au milieu (le curseur est bien place)
         self.setTextCursor(cursor)
         self.ensureCursorVisible()
+    
+    
 
     def keyPressEvent(self, event):
         # si on appuie sur CTRL
         modifiers = QApplication.keyboardModifiers()
         # appel le comportement par defaut lie a l'evenement
+
+        # On block les commandes undo et redo pour l'experience
+        blockUndo = (event.key() == Qt.Key_Z and modifiers == Qt.ControlModifier)
+        blockRedo = (event.key() == Qt.Key_Y and modifiers == Qt.ControlModifier)
+
         cursor = self.textCursor()
-        starting = (cursor.blockNumber(),cursor.columnNumber())
-        print("before : ", starting)
+        if (blockUndo or blockRedo):
+            return
         super().keyPressEvent(event)
 
+        keyValue = event.text()
+
         # Les differents comportements
-        if event.key() == Qt.Key_Backspace and modifiers == Qt.ControlModifier:
-            self.handle_backspace(starting)
-        elif event.key() == Qt.Key_Delete:
-            self.handle_delete()
-        elif event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
-            self.handle_paste()
-        elif event.key() == Qt.Key_X and modifiers == Qt.ControlModifier:
-            self.handle_cut()
-        elif event.key() == Qt.Key_Z and modifiers == Qt.ControlModifier:
-            self.handle_undo()
-        elif event.key() == Qt.Key_Y and modifiers == Qt.ControlModifier:
-            self.handle_redo()
-        elif event.key() == Qt.Key_C and modifiers == Qt.ControlModifier:
-            self.handle_copy()
-        elif event.key() == Qt.Key_U and modifiers == Qt.ControlModifier:
-            self.handle_underline()
-        elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
-            self.handle_bold()
-        elif event.key() == Qt.Key_Left and modifiers == Qt.ControlModifier:
-            self.handle_move_cursor_left(starting)
-        elif event.key() == Qt.Key_Right and modifiers == Qt.ControlModifier:
-            self.handle_move_cursor_right(starting)
-        elif event.key() == Qt.Key_Home:
-            self.handle_move_start_line(starting)
-        elif event.key() == Qt.Key_End:
-            self.handle_move_end_line(starting)
-        elif event.key() == Qt.Key_Right and modifiers == Qt.ShiftModifier:
-            self.handle_selectionR(starting)
-        elif event.key() == Qt.Key_Left and modifiers == Qt.ShiftModifier:
-            self.handle_selectionL(starting)
-        elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Left:
-            self.handle_WordSelectionL(starting)
-        elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Right:
-            self.handle_WordSelectionR(starting)
-        elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
-            self.handle_fullselection(starting)
-        elif event.key() == Qt.Key_Tab :
-            self.handle_tab(starting)
 
         
 
+        # supprimer un mot
+        if event.key() == Qt.Key_Backspace and modifiers == Qt.ControlModifier:
+            #print("Passing here")
+            self.handle_backspace()
+            return
+        # souligne
+        # elif event.key() == Qt.Key_U and modifiers == Qt.ControlModifier:
+        #     self.handle_underline()
+        # # met en gras
+        # elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
+        #     self.handle_bold()
+
+        # Detection que lorsque le logiciel est en live 
+        if not self.isWrite:
+            # if event.key() == Qt.Key_X and modifiers == Qt.ControlModifier:
+            #     self.handle_cut()
+            if event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
+                self.handle_paste()
+                return
+            # elif event.key() == Qt.Key_Z and modifiers == Qt.ControlModifier:
+            #     self.handle_undo()
+            # elif event.key() == Qt.Key_Y and modifiers == Qt.ControlModifier:
+            #     self.handle_redo()
+
+            # selection de mot
+            elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Left:
+                self.handle_WordSelectionL()
+                return
+            elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Right:
+                self.handle_WordSelectionR()
+                return
+            
+            # copier
+            # elif event.key() == Qt.Key_C and modifiers == Qt.ControlModifier:
+            #     self.handle_copy()
+            
+
+            # saut d'un mot vers la gauche/droite
+            elif event.key() == Qt.Key_Left and modifiers == Qt.ControlModifier:
+                self.handle_move_cursor_left()
+                return
+            elif event.key() == Qt.Key_Right and modifiers == Qt.ControlModifier:
+                self.handle_move_cursor_right()
+                return
+            
+
+            # select line
+            elif event.key() == Qt.Key_Home and modifiers == Qt.ShiftModifier:
+                self.handle_selectLinetoStart()
+                return
+            elif event.key() == Qt.Key_End and modifiers == Qt.ShiftModifier:
+                self.handle_selectLinetoEnd()
+                return
+
+            # saut de mot vers le debut ou fin d'une ligne
+            elif event.key() == Qt.Key_Home:
+                self.handle_move_start_line()
+                return
+            elif event.key() == Qt.Key_End:
+                self.handle_move_end_line()
+                return
+            
+            # select single character
+            elif event.key() == Qt.Key_Right and modifiers == Qt.ShiftModifier:
+                self.handle_selectionR()
+                return
+            elif event.key() == Qt.Key_Left and modifiers == Qt.ShiftModifier:
+                self.handle_selectionL()
+                return
+            
+            # selectionne tout le document
+            elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
+                self.handle_fullselection()
+                return
+            
+            # tab -> le modele n'arrive pas a comprendre les modifications liees a TAB
+            elif event.key() == Qt.Key_Tab :
+                self.handle_tab()
+                return
+            # simple movements (droite / gauche)
+            elif event.key() == Qt.Key_Right :
+                self.handle_goRightSingle()
+                return
+            elif event.key() == Qt.Key_Left :
+                self.handle_goLeftSingle()
+                return
+            
+            # On prend en compte les touches simples
+            elif keyValue.isalpha() or keyValue.isdigit() or keyValue.isprintable() or event.key() == Qt.Key_Backspace :
+                self.handle_Letter()
+                return
+        
+        
+        
+
+    # Handles for when not generating data -------------------------------------------------------------------------------
+    
     def handle_copy(self):
         # toPlainText() recupere le texte
         #print(self.toPlainText())
-        print("J'ai copié")
-
-    def handle_backspace(self,startingPos):
-        #print("Supprimer le mot")
-        self.updated("delWord",startingPos)
-
+        #print("J'ai copié")
+        pass
+    
     def handle_delete(self):
         print("Supprimer ?")
-
+    
+    # on groupe copier coller
     def handle_paste(self):
-        print("J'ai collé")
+        #print("J'ai collé")
+        self.updated("CopyPaste")
 
     def handle_cut(self):
-        print("J'ai coupé")
+        #print("J'ai coupé")
+        pass
 
     def handle_undo(self):
         print("Annulay")
@@ -105,69 +183,101 @@ class CustomTextEdit(QTextEdit):
     def handle_redo(self):
         print("Annulay dans l'autre sens")
 
-    def handle_move_cursor_left(self,startingPos):
+    def handle_move_cursor_left(self):
         #print(self.textCursor().position())
         #print("je vais a gauche ",self.textCursor().position())
-        self.updated("moveL",startingPos)
+        self.updated("CTRL + Left")
 
-    def handle_move_cursor_right(self,startingPos):
+    def handle_move_cursor_right(self):
         #print(self.textCursor().position())
         #print("je vais à droite ",self.textCursor().position())
-        self.updated("moveR",startingPos)
-    
-    def handle_replace(self,startingPos):
-        self.updated("replace",startingPos)
-        print("replace")
-    
-    def handle_move_start_line(self,startingPos):
+        self.updated("CTRL + Right") 
+
+    def handle_move_start_line(self):
         #print("going to the start of the line")
-        self.updated("moveSLine",startingPos)
+        self.updated("Home")
 
-    def handle_move_end_line(self,startingPos):
+    def handle_move_end_line(self):
         #print("going to the end of the line")
-        self.updated("moveELine",startingPos)
+        self.updated("Fin (End)")
     
-    def handle_selectionR(self,startingPos):
+    def handle_selectionR(self):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        #self.updated("selectR",startingPos)
+        #self.updated("selectR")
+        self.updated()
 
-    def handle_selectionL(self,startingPos):
+    def handle_selectionL(self):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        #self.updated("selectL",startingPos)
+        #self.updated("selectL")
+        self.updated()
     
 
-    def handle_WordSelectionR(self,startingPos):
+    def handle_WordSelectionR(self):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
 
-        print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
-        self.updated("selectWR",startingPos)
+        #print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
+        self.updated("CTRL + Shift + Right")
 
-    def handle_WordSelectionL(self,startingPos):
+    def handle_WordSelectionL(self):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("selectLR",startingPos)
+        self.updated("CTRL + Shift + Left")
         
 
-    def handle_fullselection(self,startingPos):
+    def handle_fullselection(self):
         cursor = self.textCursor()
-        #print("full selection",startingPos)
+        #print("full selection")
         
-        self.updated("selectAll",startingPos)
+        self.updated("CTRL+ A (SelectAll)")
         #print("after : ",cursor.blockNumber(),cursor.columnNumber())
-        
     
-    def handle_tab(self,startingPos):
-        self.updated("tabbing",startingPos)
+    def handle_goLeftSingle(self):
+        self.updated()
     
-    def updated(self, command,startingPos):
+    def handle_goRightSingle(self):
+        self.updated()
+    
+    def handle_selectLinetoStart(self):
+        self.updated("Shift + Home")
+    
+    def handle_selectLinetoEnd(self):
+        self.updated("Shift + End")
+
+    
+    # Others ---------------------------------------------------------------------
+
+    def handle_backspace(self):
+        #print("Supprimer le mot")
+        self.updated("WordDel")
+    
+    
+    def handle_replace(self):
+        self.updated("Search&Replace")
+        #print("replace")
+    
+    
+    def handle_tab(self):
+        self.updated("tabbing")
+    
+    def handle_Letter(self):
+        self.updated("WriteWord")
+
+
+    # The update function that is called if command = None then we are online otherwise we are making a dataset
+    def updated(self, command=None):
         cursor = self.textCursor()
         endPos = (cursor.blockNumber(),cursor.columnNumber())
         startSel = cursor.selectionStart()
         endSel = cursor.selectionEnd()
-        self.logger.update(command, (self.toPlainText(),cursor.position(),startingPos,endPos,startSel,endSel))
+        charlen= len(self.toPlainText())
+
+        text = self.toPlainText()
+        word_count = len(text.split())
+        self.logger.update(command, (self.toPlainText(),word_count,charlen,cursor.position(),endPos,startSel,endSel),self)
+    
 
 
 class WordFrequencyWidget(QWidget):
@@ -184,19 +294,20 @@ class WordFrequencyWidget(QWidget):
         self.label.setText("Word Frequency:\n" + "\n".join(f"{word}: {count}" for word, count in word_count.items()))
     
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self,onWrite = False):
         super().__init__()
 
         self.setWindowTitle("Word Like app")
 
-        self.text_edit = CustomTextEdit(self)
+        self.text_edit = CustomTextEdit(self,onWrite = onWrite)
 
         #self.showMaximized()
-        self.setFixedSize(800,800)
+        self.setMinimumSize(800,800)
         self.fontBox = QSpinBox()
 
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
+        self.statusBar.showMessage(f"Nombre de caractères : {len(self.text_edit.toPlainText())}")
         self.text_edit.textChanged.connect(lambda: self.statusBar.showMessage(f"Nombre de caractères : {len(self.text_edit.toPlainText())}"))
         self.actions = []
 
@@ -209,6 +320,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.text_edit)
         layout.addWidget(self.word_frequency_widget)
         self.setCentralWidget(central_widget)
+        layout.setContentsMargins(100,11,100,0)
 
         search_action = QAction(QIcon(), "Search", self)
         search_action.setShortcut("Ctrl+F")
@@ -294,6 +406,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.fontBox)
 
         # Connect the text changed signal to update the word frequency
+        self.update_word_frequency()
         self.text_edit.textChanged.connect(self.update_word_frequency)
 
     def update_word_frequency(self):
@@ -332,8 +445,7 @@ class MainWindow(QMainWindow):
                     cursor.insertText(replace_text)
                     # Recherche l'occurrence suivante du texte recherché
                     cursor = document.find(search_text, cursor)
-        starting = (cursor.blockNumber(),cursor.columnNumber())
-        self.text_edit.handle_replace(starting)
+        self.text_edit.handle_replace()
     
     def replacePlayer(self,searchT,replaceT):
         # Demande à l'utilisateur d'entrer le texte à remplacer (Toujours QInputDialog)
@@ -351,8 +463,52 @@ class MainWindow(QMainWindow):
                     cursor.insertText(replace_text)
                     # Recherche l'occurrence suivante du texte recherché
                     cursor = document.find(search_text, cursor)
-        starting = (cursor.blockNumber(),cursor.columnNumber())
-        self.text_edit.handle_replace(starting)
+        #print(search_text)
+        self.text_edit.handle_replace()
+    
+    # Comment : It doesn't matter where we paste it as long as it's on an empty space due to how bag of word works
+    def playerCopyPaste(self):
+        texteditor = self.text_edit
+        dice = np.random.randint(2,7)
+        direction = (np.random.random() < 0.5)
+
+        # direction selected (left of right)
+        if direction :
+            # Number of element selected
+            for i in range(dice):
+                QTest.keyPress(texteditor, Qt.Key_Right, Qt.ControlModifier | Qt.ShiftModifier)
+        # copy
+        else : 
+            # Number of element selected
+            for i in range(dice):
+                QTest.keyPress(texteditor, Qt.Key_Left, Qt.ControlModifier | Qt.ShiftModifier)
+
+        QTest.keyPress(texteditor,Qt.Key_C,  Qt.ControlModifier)
+
+        # move the cursor to the end of the document
+        cursor = texteditor.textCursor()
+        cursor.movePosition(cursor.End)
+        texteditor.setTextCursor(cursor)
+        QTest.keyPress(texteditor,Qt.Key_Space)
+
+        # Pasting the text
+        QTest.keyPress(texteditor,Qt.Key_V,  Qt.ControlModifier)
+    
+    def writeWord(self):
+        randomletters = [random.choice('abcdefghijklmnopqrstuvwxyz') for i in range(np.random.randint(1,11))]
+        texteditor = self.text_edit
+
+
+        # move the cursor to the end of the document
+        cursor = texteditor.textCursor()
+        cursor.movePosition(cursor.End)
+        texteditor.setTextCursor(cursor)
+        QTest.keyPress(texteditor,Qt.Key_Space)
+
+        for char in randomletters:
+            QTest.keyClick(self.text_edit, char)
+            QTest.qWait(10)  # Wait for a short duration between each character
+            self.text_edit.updated("WriteWord")
 
 
     def toggle_bold(self, boolgras):
@@ -390,10 +546,11 @@ class MainWindow(QMainWindow):
 def reset(texteditor):
 
     texteditor.clear()
-    texteditor.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
+    texteditor.setPlainText("The sun rises, and the morning brings a new day. Birds chirp, filling the air with melody.\nI wake up, feel refreshed, and get ready for the day ahead. I put on a comfortable shirt and jeans,\nready for a walk in the nearby park. As I stroll through the park, I see many people enjoying the outdoors.\nSome jog, others walk their dog. A child plays on the playground, laughing and having fun. It's a pleasant sight.\nIn the park, there is a tall tree providing shade from the sun. I find a bench under a tree and sit down to read a book.\nThe story is captivating, and time passes quickly. I lose myself in the pages, engrossed in the tale.\nAfter a while, I decide to explore more of the park. There is a pond with a duck swimming peacefully.\nI watch it for a while before continuing on my way. A group of friends has a picnic nearby,\nsharing food and laughter. As I walk, I notice a beautiful flower in various colors - red, blue, yellow, and white.\nThe fragrance of the flower fills the air,\nmaking the stroll even more delightful. I take a moment to admire the beauty of nature.\nAfter a pleasant walk, I head to a café for lunch. The café is cozy, and the menu offers a variety of dishes.\nI order a sandwich and a refreshing lemonade. The food is delicious, and I enjoy the peaceful atmosphere of the café.\nIn the afternoon, I meet a friend at the library. We browse through books, discussing our favorite author and genre.\nThe library is a treasure trove of knowledge, and we leave with a few books to read later.\nLater in the evening, I attend a music concert in the park. The band plays lively tunes,\nand the crowd claps along. The atmosphere is festive, and everyone enjoys the performance.\nAs the sun sets, the sky changes colors, displaying shades of orange and pink. It's a beautiful sight.\nIn conclusion, spending time outdoors and appreciating the simple pleasure of life can bring joy and fulfillment.\nThe NGSL provides a wide range of words to express the experience and emotion we encounter every day.")
+    #texteditor.setPlainText("Darkness. Just darkness. Darkness not visible. The absence of light. A vacuum I can’t describe. An . . . emptiness.\n\nDarkness in which I can see nothing. Darkness that terrifies me, suffocates me, crushes me. Darkness forced on me whether I like it or not, whether it is daylight or nighttime outside, in which I am expected to sleep. Darkness created by window coverings that cut off light and fresh air, the windows further curtained to prevent stray outside light from entering my room. Darkness.\n\nIn the darkness all I can hear is my clock. And my own heartbeat. And my breathing. At least I am alive. Or am I? It is hard to be sure in the darkness. Darkness, and voices. The voices of my parents, though I am alone, far from them: “Child do this . . . Child do that . . . Child don’t . . . Child why can’t you . . . Child stop . . . Child you must . . . Child, child, child.” Never, ever my name.\n\nLying there, I feel as if I am being forced into a pit, a hole in the ground—being buried, hidden, put away. As if I am disposable. As if my very existence is being denied. As if I must not be seen or heard. As if my birth is a dirty secret, an evil act of mine that must be obliterated without trace. As if I am an object of . . . shame. Why? What could I, a mere child, have done that would cause such a reaction in others, in my father and mother—the man and woman who created me, guardians and enforcers of my darkness?\n\nI am their only child. I think I know why: they never wanted me. I was an accident for them, a mistake they will be careful never to repeat.")
     text_length = len(texteditor.toPlainText())
 
-    position = np.random.randint(text_length)
+    position = np.random.randint(1,text_length)
 
     cursor = texteditor.textCursor()
     cursor.setPosition(position,QTextCursor.MoveAnchor)
@@ -401,14 +558,16 @@ def reset(texteditor):
     texteditor.setTextCursor(cursor)
     texteditor.ensureCursorVisible()
     texteditor.logger.reset()
+    texteditor.updated("")
 
 
 def get_dict():
-    my_data = pd.read_csv('data\word-freq-top5000.csv', delimiter=',', usecols=[1]).to_numpy()[:,0]
+    my_data = pd.read_csv('data/NGSLWords.csv', delimiter=',', usecols=[0]).to_numpy()[:,0]
     return my_data
 
 def useAct(action,app,window):
     dico = get_dict()
+    print("choice ",action)
     match action:
         case "SelectWR":
             QTest.keyPress(app, Qt.Key_Right, Qt.ControlModifier | Qt.ShiftModifier)
@@ -444,11 +603,18 @@ def useAct(action,app,window):
 
             # the word to replace
             toreplace = np.random.choice(replaceable)
+            dico = np.delete(dico,np.where(dico == toreplace))
 
             # the replacing word
             replaced = np.random.choice(dico)
 
             window.replacePlayer(toreplace,replaced)
+
+        case "CopyPaste":
+            window.playerCopyPaste()
+        
+        case "WriteWord" :
+            window.writeWord()
 
 
     cursor = app.textCursor()
@@ -456,10 +622,21 @@ def useAct(action,app,window):
     app.setTextCursor(cursor)
 
 
+def play(texteditor,window,commands,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 4000,moves =10):
+    for i in range(epochs):
+        for j in range(moves):
+            cursor = texteditor.textCursor()
+            act = np.random.choice(commands)
+            if cursor.blockNumber() == 0 and cursor.columnNumber == 0:
+                reset(texteditor)
+            useAct(act,texteditor,window)
+        reset(texteditor)
 
 
+    
 
-def play(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 100,moves = 5):
+# Machine learning data creation that does not work well in practice for selection
+"""def play(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 100,moves = 5):
 
     tmpep = epochs*len(commandList3)
     tmpmoves = moves*len(commandList3)
@@ -487,10 +664,10 @@ def play(texteditor,window,commandList1,commandList2,commandList3,start_funtion=
         for j in range(tmpmoves):
             act = np.random.choice(commandList2)
             useAct(act,texteditor,window)
-        reset(texteditor)
+        reset(texteditor)"""
     
 
-def playNonRand(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 500,moves = 5):
+"""def playNonRand(texteditor,window,commandList1,commandList2,commandList3,start_funtion=lambda: print(None), reset_function=lambda: print(None),epochs = 500,moves = 5):
 
     for k in range(len(commandList3)):
         act = commandList3[k]
@@ -512,7 +689,7 @@ def playNonRand(texteditor,window,commandList1,commandList2,commandList3,start_f
         for i in range(epochs):
             for j in range(moves):
                 useAct(act,texteditor,window)
-            reset(texteditor)
+            reset(texteditor)"""
     
     
 
@@ -520,17 +697,19 @@ def playNonRand(texteditor,window,commandList1,commandList2,commandList3,start_f
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    window = MainWindow()
+    window = MainWindow(onWrite = False)
     window.show()
-    R = Recommender("./models/modelSel")
+    R = Recommender("./models/bowModelGood",window.text_edit,hardCoded = True)
     window.text_edit.logger.assistant = R
     R.show()
-    actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
-    actionsSel = ["SelectWR","SelectWL","SelectAll"]
-    actionsMove = ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab"]
-    actionsWord = ["WordDel","Replace"]
+    #actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
+    #actionsSel = ["SelectWR","SelectWL","SelectAll"]
+    #actionsMove = ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab"]
+    # Copy paste bigram
+    actionsWord = ["WordDel","Replace","CopyPaste","WriteWord"]
     #play(window.text_edit,window,actionsSel,actionsMove,actionsWord,reset_function=reset)
     #playNonRand(window.text_edit,window,actionsSel,actionsMove,actionsWord,reset_function=reset)
+    #play(window.text_edit,window,actionsWord)
 
     app.exec()
 

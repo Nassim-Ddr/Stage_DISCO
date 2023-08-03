@@ -10,63 +10,111 @@ from time import time
 import pandas as pd
 
 
+# Some sort of decision tree manually done (only for selection so not an issue)
 class HardCodedModel():
-    def predict(self, inputData):
-        # On utilisera un triplet 
-        bowData, allPos, label = inputData
-        past, present = allPos[:5], allPos[5:]
-        oldPos, oldline1, oldcolumn1, oldline2, oldcolumn2 = past
-        newPos, newLine1, newColumn1, newLine2, newColumn2 = present
+    def __init__(self,texteditor,historySize):
+        self.limit = historySize
+        self.texteditor = texteditor
+        self.hardCodedCommands = ["CTRL+ A (SelectAll)", 
+        "Shift + Fin (End) Button", 
+        "CTRL + Shift + Right", 
+        "Fin (End)", 
+        "CTRL + Right", 
+        "Shift + Home", 
+        "CTRL + Shift + Left",
+        "Home",
+        "CTRL + Left"
+        ]
+        
+        
+    def predict(self, oldState, newState):
+        #inputData, label = inputData[:len(inputData)-1], inputData[-1]
+        #past, present = inputData[:5], inputData[5:]
+        # 2 Vecteurs d'etats
+        past, present = oldState,newState
+        # oldPos : la position passee, 
+        # oldline1 : ligne du curseur precedemment, 
+        # oldcolumn1 : pareil mais pour la colonne, 
+        # oldselStart1 : position de départ de la selection passee
+        # oldselEnd1 : position de fin de la selection passee
+        # toutes les valeurs sont numeriques
+        oldPos, oldline1, oldcolumn1, oldselStart1, oldselEnd1= past
+        # positions pour l'etat courant
+        newPos, newLine1, newColumn1, newselStart1, newselEnd1 = present
 
-        oldbow, newbow = bowData
+        #print(f'Old selection = {oldselStart1} {oldselEnd1} and new Selection = {newselStart1} {newselEnd1}')
 
+        cursor = self.texteditor.textCursor()
+        
+        # Si tout le texte est selectionne, on peut suggerer la commande de selectionner tout le document
+        end = len(self.texteditor.toPlainText())
+        if (newselStart1 == 0 and newselEnd1 == end):
+                # Si l'utilisateur a utilise la commande un certain nombre de fois on n'a plus besoin de demander
+                return self.hardCodedCommands[0]
 
         # On va plus loin dans le document
-        if oldPos < newPos and newPos-oldPos > 2 :
-            # dans le cas où la selection se passe sur la meme ligne (si la ligne est differente, l'utilisateur se deplace vers la droite)
-            if oldline1 == newLine1 :
-                # si la colonne est differente ici, l'utilisateur ne fait que se deplacer (vers la droite)
-                if oldcolumn1 == newColumn1 :
-                    # La fin de la selection se trouve sur la meme ligne
-                    if oldline2 == newLine2 :
-                        if oldcolumn2 > newColumn2 :
-                            # l'utilisateur décide de selectionner un element (un mot ou groupe de lettres, comment differencier son intention ?)
-                            print("CTRL + Shift + Left")
-                        elif oldcolumn2 < newColumn2 :
-                            # l'utilisateur décide de deselectionner des elements en plus sur une ligne
-                            print("CTRL + Shift + Right")
-                        else:
-                            # L'utilisateur s'est déplacé
-                            print("CTRL + Right")
+        isEnd = self.check_cursorEnd(cursor)
+        isStart = self.check_cursorStart(cursor)
+        if oldPos < newPos :  
+            if newPos-oldPos > 3 :
+                if oldselStart1 == newselStart1 and oldselEnd1 < newselEnd1:
+                    if isEnd :
+                        # fin de ligne
+                        return self.hardCodedCommands[1]
                     else :
-                        # Une selection sur la meme ligne, donc la fin est plus loin vers la droite dans ce cas
-                        print("CTRL + Shift + Right")
+                        # l'utilisateur décide de deselectionner des elements en plus sur une ligne
+                        return self.hardCodedCommands[2]
+                elif oldselEnd1 == newselEnd1 and oldselStart1 < newselStart1 :
+                    # selectionner des elements sur la ligne
+                    return self.hardCodedCommands[2]
+                elif isEnd :
+                    # deplacement vers la fin de la ligne
+                    return self.hardCodedCommands[3]
                 else:
-                    print("Deplacement droite (CTRL+Right pour se deplacer de mot en mot)")
-            else:
-                print("Deplacement droite (CTRL+Right pour se deplacer de mot en mot)")
-            return
+                    # déplacement vers la droite
+                    return self.hardCodedCommands[4]
         elif oldPos == newPos :
-            print("rien ne s'est passe")
+            # rien ne s'est passe
+            return 
         # La selection se fait de droite à gauche
-        else :
-            if oldline2 == newLine2:
-                if oldcolumn2 == newColumn2:
-                    if oldline1 == newLine1:
-                        # old > new -> mouvement vers la gauche
-                        if oldcolumn1 > newColumn1:
-                            print("CTRL + Shift + Left")
-                        # old < new -> mouvement vers la droite
-                        elif oldcolumn1 < newColumn1:
-                            print("CTRL + Shift + Right")
-                        else:
-                            print("CTRL + Left")
+        elif oldPos > newPos :
+            if oldPos - newPos > 3 :
+                # dans le cas où la selection se passe sur la meme ligne (si la ligne est differente, l'utilisateur se deplace vers la droite)  
+                if oldselStart1 == newselStart1 and oldselEnd1 > newselEnd1 :
+                    if isEnd :
+                        # L'utilisateur selectionne/deselectionne la ligne depuis sa position
+                        return self.hardCodedCommands[5]
                     else :
-                        # si on passe a la ligne precedente, on sait que c'est une selection de droite a gauche
-                        print("CTRL + Shift + Left")
-                else:
-                    print("Deplacement gauche (CTRL+Left pour se deplacer de mot en mot)")
-            else :
-                print("Deplacement gauche (CTRL+Left pour se deplacer de mot en mot)")
-            return
+                        # l'utilisateur décide de selectionner un element (un mot ou groupe de lettres, comment differencier son intention ?)
+                        return self.hardCodedCommands[6]
+                elif oldselEnd1 == newselEnd1 and oldselStart1 > newselStart1 :
+                    if isStart :
+                        # selectionne tout depuis la position vers le debut de la ligne
+                        return self.hardCodedCommands[5]
+                    else :
+                        # selectionne un mot vers la gauche
+                        return self.hardCodedCommands[6]
+
+                elif isStart :
+                    # deplacement vers le debut de ligne
+                    return self.hardCodedCommands[7]
+                else :
+                    # déplacement vers la gauche
+                    return self.hardCodedCommands[8]
+    
+    def check_cursorEnd(self,cursor):
+        # verifie si le curseur se trouve a la fin d'une ligne
+        if cursor.columnNumber() == cursor.block().length() - 1 :
+            return True
+        else :
+            return False
+        
+    
+    def check_cursorStart(self,cursor):
+        # verifie si le curseur se trouve au debut d'une ligne
+        if cursor.columnNumber() == 0 :
+            return True
+        else :
+            return False
+
         

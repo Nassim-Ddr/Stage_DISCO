@@ -5,13 +5,15 @@ import numpy as np
 
 
 class QRectPlus(QRect):    
-    def __init__(self, rect, color=Qt.blue, border_width= 0):
+    def __init__(self, rect, color=Qt.blue, border_color = Qt.blue, border_width= 5):
         QRect.__init__(self, rect)
         self.color = color
+        self.border_color = border_color
         self.border_width = border_width
     
+    
     def draw(self, painter):
-        painter.setPen(QPen(self.color, self.border_width))
+        painter.setPen(QPen(self.border_color, self.border_width))
         painter.setBrush(self.color)
         painter.drawRect(self)
     
@@ -28,19 +30,22 @@ class QRectPlus(QRect):
         self.setBottomRight(self.bottomRight() + c)
     
     def copy(self):
-        return QRectPlus(self, self.color, self.border_width)
+        return QRectPlus(self, self.color, self.border_color, self.border_width)
+    
+    # Compare form
+    # mode: 'all', 'style', 'color'
+    def equals(self, eps=0, mode = 'all'):
+        return True
+    
 
 class QEllipse(QRectPlus):
-    def __init__(self, rect, color, border_width= 0):
-        QRectPlus.__init__(self, rect, color, border_width)
-
     def draw(self, painter):
-        painter.setPen(QPen(self.color, self.border_width))
+        painter.setPen(QPen(self.border_color, self.border_width))
         painter.setBrush(self.color)
         painter.drawEllipse(self)
 
     def copy(self):
-        return QEllipse(self, self.color, self.border_width)
+        return QEllipse(self, self.color, self.border_color, self.border_width)
 
 
 # QRect with a image inside the rectangle
@@ -54,6 +59,7 @@ class QRectImage(QRectPlus):
         L = [(getattr(self, f)().x(), getattr(self, f)().y()) for f in Lf]
         x1,y1 = np.min(L,0)
         x2,y2 = np.max(L,0)
+        print(self)
         painter.drawImage(QRect(x1,y1,x2-x1,y2-y1), self.image)
     
     def copy(self):
@@ -172,26 +178,15 @@ class Selection():
             
     def draw(self, painter):
         for o in self.selected:
-            # met en blanc la zone
-            painter.setOpacity(1)
-            painter.setPen(QPen(Qt.white, 2))
-            painter.setBrush(Qt.white)
-            painter.drawRect(o)
-
-            # objet sélectionné
-            painter.setOpacity(0.5)
-            o.draw(painter)
-
             # carré de selection
             painter.setPen(QPen(Qt.black, 2,  Qt.DashLine))
             painter.setOpacity(0.5)
-            painter.setBrush(Qt.white)
+            painter.setBrush(Qt.transparent)
             painter.drawRect(o)
 
             # points de resize
             L = [getattr(o, f)() for f in ["topLeft", "topRight", "bottomLeft", "bottomRight"]]
-            painter.setPen(QPen(Qt.black, 10,  Qt.DashLine))
-            painter.setBrush(Qt.white)
+            painter.setPen(QPen(Qt.gray, 10))
             painter.drawPoints(L)
     
     def copy_contents(self):
