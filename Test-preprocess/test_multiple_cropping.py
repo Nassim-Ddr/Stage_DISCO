@@ -89,7 +89,7 @@ def find_bb(img_org, img_edt) :
     cv2.destroyAllWindows()
 
 
-find_bb("../data/pair_tmp/original_2.jpg", "../data/pair_tmp/edited_2.jpg")    
+find_bb("../data/pair_tmp/original.jpg", "../data/pair_tmp/edited_wave.jpg")    
 
 #JOUER AVEC LE SCALE FACTOR
 #JOUER AVEC LA TAILLE MIN 

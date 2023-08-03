@@ -4,9 +4,10 @@ import os
 import sys
 import win32com.client
 import win32gui
-from pyautogui import press, typewrite, hotkey
+from pyautogui import press, write, hotkey
 import random
 import time
+import numpy as np
 
 
 class PSDBase(object):
@@ -286,26 +287,30 @@ class Photoshop(PSDBase):
 class Photoshop_Player() : 
     def __init__(self) :
         
-        self.input_folder = "C:\\Projects\\Stage_DISCO\\Stage_DISCO\\data\\portraits\\"
+        self.input_folder = "C:\\Users\\Nassim\\Desktop\\Stage_DISCO\\data\\portraits\\"
         self.input_file_list = os.listdir(self.input_folder)
-        self.output_folder = "C:\\Projects\\Stage_DISCO\\Stage_DISCO\\data\\Player_output\\Photoshop\\"
+        self.output_folder = "C:\\Users\\Nassim\\Desktop\\Stage_DISCO\\data\\Player_output\\Params\\"
         self.ps = Photoshop()
-        self.handle = win32gui.FindWindow(None, 'Adobe Photoshop 2023')
+        self.handle = win32gui.FindWindow(None, 'Adobe Photoshop (beta)')
         win32gui.SetForegroundWindow(self.handle)
 
         self.command_dict = {
-            "Guassian": ["t", 11, 4, 2],
-            "Surface": ["t", 11, 10, 2], 
-            "Pinch" : ["t", 13, 1, 2], 
-            "Twirl" : ["t", 13, 6, 2], 
-            "Wave" : ["t", 13, 7, 2], 
+            "Guassian": ["t", 11, 4, [[1, 1000]]], #param 1 : radius [0.1, 10000]
+            "Surface": ["t", 11, 10, [[1, 100], [2, 255]]], #param 1 : radius [1, 100] --- param 2 : Threshold [2, 255]
+            "Pinch" : ["t", 13, 1, [[-100, 100]]],  #param 1 : amount  [-100, 100]
+            "Twirl" : ["t", 13, 6, [[-999, 999]]],  #param 1 : angle [-999, 999]
+            # "Wave" : ["t", 13, 7, [[1, 999], [1, 999], [1, 999], [1, 999], [1, 999], [1, 100], [1, 100]]],   
+                                        #param 1 : nb generators [1, 999] --- param 2 : wavelength min = param 3 : wavelengthmax [1, 999]
+                                        #param 4 : Amplitude min = param 5 : amplitude max [1,999] ---
+                                        #param 6 : Scale horiz = param 7 : Scale verti [1, 100]
             "Sharpen" : ["t", 17, 0, 1], 
             "Diffuse": ["t", 18, 0, 2], 
             "Find edges" : ["t", 18, 3, 1]
         }
 
-        self.command_list = list(self.command_dict.keys())
 
+
+        self.command_list = list(self.command_dict.keys())
 
     def generate_data(self) : 
         for i in range(len(self.input_file_list)) : 
@@ -316,17 +321,55 @@ class Photoshop_Player() :
                 doc = self.ps.open(self.input_folder + input_file)
                 
                 commande = self.command_list[j]
-
                 sc = self.command_dict[commande]
-                hotkey("alt", sc[0])
-                press("down", presses=sc[1])
-                press("right")
-                press("down", presses=sc[2])
-                press("enter", presses=sc[3])
-                time.sleep(0.5)
-                self.ps.save_jpeg(doc=doc, savepath=self.output_folder, jpeg_filename=input_file[:-4]+ "_" + commande.lower() +"_out")
-                time.sleep(0.5)
-                self.ps.close(doc)
+                
+                l3 = sc[3]
+                if (isinstance(l3, int)) : 
+                    hotkey("alt", sc[0])
+                    press("down", presses=sc[1])
+                    press("right")
+                    press("down", presses=sc[2])
+                    press("enter", presses=sc[3])
+                    time.sleep(0.5)
+                    self.ps.save_jpeg(doc=doc, savepath=self.output_folder, jpeg_filename=input_file[:-4]+ "_" + commande.lower() +"_out")
+                    time.sleep(0.5)
+                    self.ps.close(doc)
+                else : 
+                    l = sc[3]
+                    nb_values = 10
+                    possible_values = []
+                    for rng in l : 
+                        possible_values.append(np.linspace(rng[0], rng[1], num=nb_values, dtype=int).tolist())
+
+                    combinaisons = np.array(np.meshgrid(*possible_values)).T.reshape(-1,len(possible_values))
+                    combinaisons = [c for c in combinaisons if c[0] < c[1]]
+
+                    for i in range(len(combinaisons)) : 
+                        c = combinaisons[i]
+                        hotkey("alt", sc[0])
+                        press("down", presses=sc[1])
+                        press("right")
+                        press("down", presses=sc[2])
+                        press("enter")
+                        for v in c : 
+                            press("backspace")
+                            write(str(v))
+                            press("tab")
+                        press("enter")
+                        press("enter")
+                        time.sleep(0.2)
+                
+                        self.ps.save_jpeg(doc=doc, savepath=self.output_folder, jpeg_filename=input_file[:-4]+ "_" + commande.lower() + "_" + str(i) +"_out")
+                        
+                        time.sleep(0.2)
+                        self.ps.close(doc)
+                        doc = self.ps.open(self.input_folder + input_file)
+                        time.sleep(0.2)
+                    time.sleep(0.5)
+                    self.ps.close(doc)
+                    
+                
+                
 
 
 
@@ -336,3 +379,4 @@ class Photoshop_Player() :
 if __name__ == '__main__':
     pplayer = Photoshop_Player()
     pplayer.generate_data()
+    
