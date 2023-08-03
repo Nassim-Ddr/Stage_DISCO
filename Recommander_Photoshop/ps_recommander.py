@@ -332,6 +332,7 @@ class Photoshop_Recommander() :
 
         self.ps.save_jpeg(doc=self.doc, savepath=self.tmp_folder, jpeg_filename="tmp_0")
         self.current_state = imread(self.tmp_folder + "tmp_0.jpg")
+        self.old_state = None
         
         #Load models
         device = (
@@ -348,7 +349,7 @@ class Photoshop_Recommander() :
         self.model_crop = LeNet().to(device)
         self.model_crop.load_state_dict(torch.load("../models/model_retrain_crop"))
 
-        
+        self.command_labels = ["Diffuse Filter", "Edges Filter", "Gaussian filter", "Pinch Filter", "Sharpen Filter", "Surface Filter", "Twirl Filter", "Wave Filter"]
 
         #Alert to display when we have a recomandation 
         self.alert = QMessageBox()
@@ -368,6 +369,7 @@ class Photoshop_Recommander() :
                 time.sleep(self.dist_between_states)
                 continue
             self.histo.append(self.current_state)
+            self.old_state = self.current_state
             self.current_state = imread(self.tmp_folder + "tmp_" + str(self.histo_cpt) + ".jpg")
             self.histo_cpt += 1
             self.check_better_command()
@@ -432,7 +434,7 @@ class Photoshop_Recommander() :
         #     else : 
         #         return
         if (len(self.histo) > 2) : 
-            self.ask_model(self.histo[:-1][0], self.current_state)
+            self.ask_normal_model(self.old_state, self.current_state)
 
     def ask_model(self, img1, img2) : 
         transform = transforms.Compose([
@@ -469,7 +471,20 @@ class Photoshop_Recommander() :
             print("model_normal recommande : " + str(predicted_class.item()))
             print("model_crop recommande : " + str(predicted_class_crop.item()))
         
-        
+    def ask_normal_model(self, img1, img2) : 
+        transform = transforms.Compose([
+            transforms.Resize((224, 224)),  
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), 
+        ])
+
+        image_tensor = transform(Image.fromarray(np.hstack((img1, img2)))).unsqueeze(0)
+        image_tensor = image_tensor.cuda()
+        with torch.no_grad() : 
+            output = self.model_normal(image_tensor)
+        _, predicted_class = torch.max(output, 1)
+
+        print("we recommend you to use the command : " + str(predicted_class.item()) + " : " + self.command_labels[predicted_class.item()])
 
     def recomend_command(self, command) : 
         print("recommend command : " + command)
