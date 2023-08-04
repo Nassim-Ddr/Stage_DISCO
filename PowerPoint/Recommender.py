@@ -2,6 +2,11 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QLabel, QVBoxLayout
+from PyQt5.QtGui import QKeySequence, QColor, QPalette, QIcon, QPixmap
+from PyQt5.QtCore import Qt, QSize, QTimer, QPoint
+
+
 import numpy as np
 import torch
 from torch import nn
@@ -80,7 +85,7 @@ class Recommender(QMainWindow):
             #preds_conf = np.array([self.model.predict(s, state) for s in self.memory])
             #index = np.argmax(preds_conf[:,1])
             #pred_command, confiance = preds_conf[index]
-            pred_command, confiance = self.model.predictCopyAlign(self.memory[-1], autre), "Tellement confiant"
+            pred_command, confiance = self.model.predict(self.memory[-1], autre), "Tellement confiant"
             self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
             #self.showState(self.memory[index], state)
             

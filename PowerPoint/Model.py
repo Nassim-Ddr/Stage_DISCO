@@ -80,6 +80,7 @@ class HardCodedModel():
     # a,b : List[QRect]
     # return "R/L/T/B"
     args = ["AlignLeft", "AlignTop", "AlignRight", "AlignBottom"]
+    D = dict()
 
     def predict(self, a, b, eps = 20):
         # Meme nombre d'objets, donc possiblement un déplacement d'objet
@@ -102,18 +103,58 @@ class HardCodedModel():
         return "Rien du tout"
     
     def predictCopyAlign(self, a, b, eps = 20):
-        def state(o):
-            return (o.height(), o.width(), 
-                    o.color.red(), o.color.green(), o.color.blue(), 
-                    o.border_color.red(), o.border_color.green(), o.border_color.blue())
-        a = [state(o) for o in a if not isinstance(o,QRectGroup)]
-        b = [state(o) for o in b if not isinstance(o,QRectGroup)]
-        B = np.abs(b)
+        B = np.abs([self.state(o) for o in b if not isinstance(o,QRectGroup)])
         for o in B:
             d = np.all(np.abs(B - o) <= eps, axis=1).sum() - 1
             if d > 0:
                 return "Copy Align"
-        return "Rien Du Tout"
+        return self.compareGroupBetween(a,b, eps)
+    
+    def compareGroupBetween(self, a, b, eps=20):
+        b = [o for o in b if isinstance(o,QRectGroup)]
+        B = [(o.height(), o.width())  for o in b]
+        print("Filter: ", b)
+        if len(B) > 1:
+            for index,o in enumerate(np.abs(B[:-1])):
+                Lindex = np.all(np.abs(B - o) <= eps, axis=1)
+                Lindex[index] = False
+                for i in np.where(Lindex)[0]: 
+                    if self.compareGroup(b[index], b[i], eps): return "Copy Group Align"
+        return "Rien du Tout"
+    
+    def compareGroup(self, o1, o2, D = None, eps=20):
+        if len(o2.objects) != len(o1.objects): return False
+        top = min(o1.top(), o1.bottom())
+        left = min(o1.left(), o1.right())
+        L1 = np.abs([self.stateGroup(o, (top, left)) for o in o1.objects])
+        top = min(o2.top(), o2.bottom())
+        left = min(o2.left(), o2.right())
+        L2 = np.abs([self.stateGroup(o, (top, left)) for o in o2.objects])
+        L1 = np.sort(L1)
+        L2 = np.sort(L2)
+        return np.all((L1 - L2) <= eps)
+
+    def state(self, o):
+        name = o.__class__.__name__
+        if name not in self.D: self.D[name] = len(self.D)
+        return (self.D[name]*100, 
+                o.height(), o.width(), 
+                o.color.red(), o.color.green(), o.color.blue(), 
+                o.border_color.red(), o.border_color.green(), o.border_color.blue())
+    
+    def stateGroup(self, o, ref):
+        name = o.__class__.__name__
+        if name not in self.D: self.D[name] = len(self.D)
+        top, left = ref
+        return (self.D[name]*100, 
+                min(o.top(),o.bottom()) - top, min(o.left(),o.right()) - left,
+                o.height(), o.width(), 
+                o.color.red(), o.color.green(), o.color.blue(), 
+                o.border_color.red(), o.border_color.green(), o.border_color.blue())
+
+
+            
+
     
 # Premier Plan / Arrière Plan
 # Copy Style
