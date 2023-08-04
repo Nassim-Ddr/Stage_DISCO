@@ -126,10 +126,11 @@ class HardCodedModel():
         if len(o2.objects) != len(o1.objects): return False
         top = min(o1.top(), o1.bottom())
         left = min(o1.left(), o1.right())
-        L1 = np.abs([self.stateGroup(o, (top, left)) for o in o1.objects])
+        dtype = [(str(i), int) for i in range(11)]
+        L1 = [self.stateGroup(o, (top,left)) for o in o1.objects]
         top = min(o2.top(), o2.bottom())
         left = min(o2.left(), o2.right())
-        L2 = np.abs([self.stateGroup(o, (top, left)) for o in o2.objects])
+        L2 = [self.stateGroup(o, (top,left)) for o in o2.objects]
         L1 = np.sort(L1)
         L2 = np.sort(L2)
         return np.all((L1 - L2) <= eps)
@@ -151,6 +152,51 @@ class HardCodedModel():
                 o.height(), o.width(), 
                 o.color.red(), o.color.green(), o.color.blue(), 
                 o.border_color.red(), o.border_color.green(), o.border_color.blue())
+    
+    def argsort(self, n1, n2):
+        dtype = [(str(i),int) for i in range(len(n1[0]))]
+        n1 = np.argsort([np.array(tuple(x), dtype=dtype) for x in n1])
+        n2 = np.argsort([np.array(tuple(x), dtype=dtype) for x in n2])
+        return n1,n2
+    
+    def predictForeorBackground(self, s1, s2):
+        # True pas changement de taille, pas de changement de couleur
+        def noChange(s1,s2, eps = 10):
+            if len(s1) != len(s2): return None,None,False
+            L1 = np.abs([self.state(o) for o in s1])
+            L2 = np.abs([self.state(o) for o in s2])
+            index1, index2 = self.argsort(L1, L2)
+            return index1, index2, np.all((L1[index1] - L2[index2]) <= eps)
+        index1, index2, r = noChange(s1,s2)
+        if r:
+            # relation 1 vs 1
+            def f(o1, o2, i,j):
+                if i == j: return 0
+                v = 0
+                if o1.intersects(o2):
+                    if i < j: v = -1
+                    elif i > j: v = 1
+                return v
+            # Matrice des relations
+            A = np.array([[f(o1, o2, i, j) for j,o2 in enumerate(s1)] for i,o1 in enumerate(s1)])
+            B = np.array([[f(o1, o2, i, j) for j,o2 in enumerate(s2)] for i,o1 in enumerate(s2)]) 
+            # Tri pour la cohérence
+            A = A[index1]
+            B = B[index2]
+            A = A[:,index1]
+            B = B[:,index2]
+            R = (B - A)
+            index = np.argsort(np.abs(R).sum(1))
+            B = B[index][::-1]
+            R = R[index][::-1]
+            for i,x in enumerate(B):
+                if np.abs(R[i]).sum() == 0: return "Rien Du Tout"
+                if np.any(x>0) and np.all(x>=0): return "Premier Plan"
+                if np.any(x<0) and np.all(x<=0): return "Arriere Plan"
+            return "Rien Du Tout"
+        return "Rien du Tout"
+
+
 
 
             
