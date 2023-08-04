@@ -1,6 +1,9 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QWidget, QFileDialog, QApplication
+from PyQt5.QtCore import QRect, QPoint, Qt, pyqtSlot
+from PyQt5.QtGui import QColor, QImage
 import numpy as np
 from CanvasTools import *
 from Logger import Logger
@@ -12,10 +15,10 @@ class Canvas(QWidget):
         self.parent = parent
         # configurations du canvas
         self.setMinimumSize(600,300)
-        self.setContentsMargins(10,10,10,10)
         
         # attributs d'affichage
-        self.bkcolor = QColor(Qt.blue) # couleur de fond et du contour (par defaut)
+        self.bkcolor = QColor(Qt.blue)
+        self.border_color = QColor(Qt.blue)
         self.width = 3 # taille du contour
         self.painterTranslation = QPoint(0,0) # vecteur de translation
         self.scale = 1 # zoom du canvas
@@ -29,6 +32,7 @@ class Canvas(QWidget):
         self.selection = Selection()
         self.alignTool = AlignTool()
         self.copy = None # figures stocké en copy
+        self.copyAlign = None
         self.cursorPos = None
         self.pStart = None
         
@@ -68,12 +72,13 @@ class Canvas(QWidget):
                     self.selection.remove_element(f)
             elif  QApplication.keyboardModifiers() == Qt.ControlModifier:
                 if f is None: pass
-                elif self.selection.isEmpty(): self.selection.add_element(f)
                 elif not self.selection.contains(f):
                     self.selection.add_element(f)
+                    self.selection.element = None
                 else:
-                    self.selection.remove_element(f)
-                self.copy_element()
+                    self.selection.element = f
+                self.copy_element(mode='align')
+                self.update()
             else:    
                 if f is None: self.selection.clear()
                 elif self.selection.isEmpty(): self.selection.add_element(f)
@@ -88,9 +93,9 @@ class Canvas(QWidget):
             if self.mode=='draw':
                 self.cursorPos = (event.pos()/self.scale - self.painterTranslation)
                 if self.currentTool == "drawRect":
-                    self.Lforms.append(QRectPlus(QRect(self.pStart, self.pStart), self.bkcolor))
+                    self.Lforms.append(QRectPlus(QRect(self.pStart, self.pStart), self.bkcolor, self.border_color, self.width))
                 else:
-                    self.Lforms.append(QEllipse(QRect(self.pStart, self.pStart), self.bkcolor))
+                    self.Lforms.append(QEllipse(QRect(self.pStart, self.pStart), self.bkcolor, self.border_color, self.width))
             self.update()
                             
     def mouseMoveEvent(self, event):
@@ -118,14 +123,19 @@ class Canvas(QWidget):
             
             elif self.mode == 'select':
                 self.cursorPos= (self.cursorPos/self.scale - self.painterTranslation)
-                self.paste_element((0,0))
-                self.copy = None
+                self.paste_element((0,0), 'align')
+                self.selection.element = None
                 V = self.cursorPos - self.pStart
                 for o in self.selection.selected:
                     o.translate(V)
                 self.pStart = self.cursorPos
             self.update()
 
+    def updated(self, command):
+        self.logger.update(self.getImage(), command, self.state())
+    
+    def state(self):
+        return [o.copy() for o in self.Lforms]
 
     def mouseReleaseEvent(self, event):
         # La figure est dessinee, on l'ajoute dans la liste d'objets
@@ -135,8 +145,11 @@ class Canvas(QWidget):
             self.corner_resize = None
             self.setter = None
             self.mode = 'select'
+            self.updated('Resize')
         elif self.mode == 'select':
-            self.logger.update(self.getImage(), 'Move')
+            self.copyAlign = None
+            self.selection.remove_element(self.selection.element)
+            self.updated('Move')
         self.pStart = None
         self.cursorPos = None
         self.update()
@@ -148,9 +161,7 @@ class Canvas(QWidget):
         painter.translate(self.painterTranslation)
 
         # Toutes les figures
-        for form in self.Lforms:
-            form.draw(painter)
-
+        for form in self.Lforms: form.draw(painter)
         self.selection.draw(painter)
 
     def reset(self):
@@ -176,12 +187,22 @@ class Canvas(QWidget):
 
     def set_color(self, color):
         # On change la couleur de la figure selectionne ou des prochaines figures
-        if self.mode == 'select':
-            for o in self.selection.selected:
-                o.color = color
+        if self.mode == 'select' and not self.selection.isEmpty():
+            for o in self.selection.selected: o.color = color
             self.update()
+            self.updated('Change color')
         else:
             self.bkcolor = color
+
+    def set_color_border(self, color):
+        # On change la couleur de la figure selectionne ou des prochaines figures
+        if self.mode == 'select' and not self.selection.isEmpty():
+            for o in self.selection.selected: o.border_color = color
+            self.update()
+            self.updated('Change border color')
+        else:
+            self.border_color = color
+
     
     # Retourn le canvas en QImage
     def getImage(self):
@@ -225,29 +246,41 @@ class Canvas(QWidget):
         self.update()
 
     @pyqtSlot()
-    def copy_element(self):
-        if self.mode == "select" and self.selection!=None:
-            self.copy = self.selection.copy_contents()
+    def copy_element(self, mode = 'normal'):
+        if self.mode == "select" and not self.selection.isEmpty():
+            if mode == 'align':
+                self.copyAlign = self.selection.copy_contents()
+            else:
+                self.copy = self.selection.copy_contents()
 
     @pyqtSlot()
-    def paste_element(self, vector = (20,20)):
-        if self.copy is not None and len(self.copy) > 0 :
-            for o in self.copy: o.translate(*vector)
-            self.Lforms.extend(self.copy)
-            self.selection.selected = self.copy
-            self.copy = [o.copy() for o in self.copy]
-            self.update()
+    def paste_element(self, vector = (20,20), mode = 'normal'):
+        vector = QPoint(*vector)
+        if mode == 'align':
+            if self.copyAlign is not None and len(self.copyAlign) > 0 :
+                self.Lforms.extend(self.copyAlign)
+                self.selection.selected = self.copyAlign
+                self.copyAlign = None
+                self.update()
+        elif self.copy is not None and len(self.copy) > 0 :
+                for o in self.copy: o.translate(vector)
+                self.Lforms.extend(self.copy)
+                self.selection.selected = self.copy
+                self.copy = [o.copy() for o in self.copy]
+                self.update()
 
     @pyqtSlot()
     def duplicate_element(self):
         self.copy_element()
         self.paste_element()
+        self.copy = None
 
     def cut_element(self):
         self.copy_element()
         if self.copy!=None:
-            self.parent.log_action("Cut "+ self.elementToString(self.copy))
-            self.selection = None
+            for o in self.selection.selected:
+                self.Lforms.remove(o)
+            self.selection.clear()
             self.update()
 
     # Supprime le dernier objet sur le canvas
@@ -307,25 +340,25 @@ class Canvas(QWidget):
         if not self.selection.isEmpty():
             self.alignTool.alignLeft(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignLeft', Lforms=self.Lforms)
+            self.updated('alignLeft')
 
     def alignRight(self):
         if not self.selection.isEmpty():
             self.alignTool.alignRight(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignRight', Lforms=self.Lforms)
+            self.updated('alignRight')
     
     def alignTop(self):
         if not self.selection.isEmpty():
             self.alignTool.alignTop(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignTop', Lforms=self.Lforms)
+            self.updated( 'alignTop')
 
     def alignBottom(self):
         if not self.selection.isEmpty():
             self.alignTool.alignBottom(self.selection.selected)
             self.update()
-            self.logger.update(self.getImage(), 'alignBottom', Lforms=self.Lforms)
+            self.updated('alignBottom')
     
     def randomize(self):
         # create object not inside another object
@@ -355,6 +388,19 @@ class Canvas(QWidget):
         self.update()
         self.logger.prevState = self.getImage()
 
+    def deplaceLast(self):
+        if not self.selection.isEmpty():
+            for form in self.selection.selected:
+                self.Lforms.remove(form)
+                self.Lforms.append(form)
+            self.update()
+
+    def deplaceFirst(self):
+        if not self.selection.isEmpty():
+            for form in self.selection.selected:
+                self.Lforms.remove(form)
+                self.Lforms.insert(0, form)
+            self.update()
 
         
         

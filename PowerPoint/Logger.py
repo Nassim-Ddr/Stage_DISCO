@@ -19,9 +19,9 @@ class Logger():
         self.cpt = 0 
         self.recommender = recommender
         
-    def update(self, state, command):
+    def update(self, state, command, autre=None):
         if self.recommender is not None:
-            self.recommender.update(state)
+            self.recommender.update(state, autre)
             return
         if self.write:
             image = self.getImage(state)

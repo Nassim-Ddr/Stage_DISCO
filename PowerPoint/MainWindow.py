@@ -2,49 +2,73 @@ import sys
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QColorDialog, QToolBar, QDialog, QSizePolicy, QToolButton, QAction
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFrame, QWidget,  QLabel, QHBoxLayout, QVBoxLayout
+from PyQt5.QtGui import QKeySequence, QColor, QPalette, QIcon, QPixmap
+from PyQt5.QtCore import Qt, pyqtSignal
+
+from PyQt5 import QtGui
+from PyQt5 import QtCore 
+from PyQt5 import QtWidgets
 from Canvas import *
 from Recommender import *
 import resources
 
-class MainWindow(QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent = None ):
-        QMainWindow.__init__(self, parent )
-        self.resize(10000, 1000)
+        QtWidgets.QMainWindow.__init__(self, parent )
         self.setFocus()
         self.setWindowTitle("PowerPoint")
 
-        self.cont = QWidget(self)
+        self.cont = QtWidgets.QWidget(self)
         self.setCentralWidget(self.cont)
-        self.canvas = Canvas(self)     
+        self.canvas = Canvas(self)    
+        self.setStatusBar(QtWidgets.QStatusBar(self))
+        self.statusBar().showMessage("Diapositive 1")
+        self.statusBar().setStyleSheet("border: 1px solid; border-color:grey; background-color:white")
 
-        self.textEdit = QTextEdit(self.cont)
-        self.textEdit.setReadOnly(True)
+        # self.textEdit = QTextEdit(self.cont)
+        # self.textEdit.setReadOnly(True)
 
-        layout = QVBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
+        layout.setSpacing(20)
+        layout.setContentsMargins(10,10,10,10)
+        self.cont.setContentsMargins(10,10,10,10)
+
+        # useless Canvas
+        w = QtWidgets.QWidget() 
+        w.setLayout( QtWidgets.QVBoxLayout())
+        c = QtWidgets.QWidget()
+        c.setMinimumSize(150,100)
+        c.setMaximumSize(150,100)
+        c.setStyleSheet("border: 1px solid; border-color:grey; background-color:white")
+        w.layout().addWidget(c)
+        w.layout().addStretch()
+        layout.addWidget(w)
+        
+
+        # separator
+        line = QtWidgets.QFrame()
+        line.setFrameShape(QFrame.VLine)
+        line.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(line)
+
+        # Useful Canvas
         w = QMainWindow()
         w.setStyleSheet("border: 1px solid; border-color:grey; background-color:white")
         w.setCentralWidget(self.canvas)
         layout.addWidget(w)
-        layout.addWidget(self.textEdit)
-        layout.setContentsMargins(100,11,100,11)
+        layout.setContentsMargins(11,0,11,0)
 
         bar = self.menuBar()
         css = """
         QMenuBar{
             Background: #b8442c;
             color:white;
-            font-size:11px;
-        }
-        QMenuBar::item {
-            color : white;
-        }
-        QMenuBar::item:selected { /* when selected using mouse or keyboard */
-            background: #dc5939;
-        }
-
-        QMenuBar::item:pressed {
-            background: #dc5939;   
-        }
+            font-size:11px; }
+        QMenuBar::item { color : white; }
+        QMenuBar::item:selected { background: #dc5939; }
+        QMenuBar::item:pressed { background: #dc5939;  }
         """
         bar.setStyleSheet(css)
         bar.resize(600,100)
@@ -70,25 +94,15 @@ class MainWindow(QMainWindow):
         editMenu.addAction("&Align Right",  self.canvas.alignRight)
         editMenu.addAction("&Align Left",  self.canvas.alignLeft)
         editMenu.addAction("&Align Bottom",  self.canvas.alignBottom)
+        editMenu.addSeparator()
+        editMenu.addAction(QIcon(":/icons/foreground.png"), "&Foreground",  self.canvas.deplaceLast)
+        editMenu.addAction(QIcon(":/icons/background.png"), "&Background",  self.canvas.deplaceFirst)
+
 
 
         # Menu Color
-        colorMenu = bar.addMenu("Color")
         actPen = fileMenu.addAction(QIcon(":/icons/pen.png"), "&Pen color", self.pen_color, QKeySequence("Ctrl+P"))
         actBrush = fileMenu.addAction(QIcon(":/icons/brush.png"), "&Brush color", self.brush_color, QKeySequence("Ctrl+B"))
-        
-        actRed = colorMenu.addAction("Rouge")
-        actRed.triggered.connect(lambda: self.canvas.set_color(QColor(Qt.red)))
-        colorMenu.addAction(actRed)
-        actBlue = colorMenu.addAction("Bleu")
-        actBlue.triggered.connect(lambda: self.canvas.set_color(QColor(Qt.blue)))
-        colorMenu.addAction(actBlue)
-        actGreen = colorMenu.addAction("Vert")
-        actGreen.triggered.connect(lambda: self.canvas.set_color(QColor(Qt.green)))
-        colorMenu.addAction(actGreen)
-        actOther = colorMenu.addAction("Autre")
-        actOther.triggered.connect(lambda: self.canvas.set_color(QColorDialog.getColor()))
-        colorMenu.addAction(actOther)
 
         colorToolBar = QToolBar("Color")
         self.addToolBar( colorToolBar )
@@ -132,9 +146,45 @@ class MainWindow(QMainWindow):
         viewToolBar.addAction( actZoom_out )
         self.cont.setLayout(layout)
 
+        # Couleurs
+        colorToolBar = QToolBar("Couleurs")
+        self.colorToolButton = QToolButton()
+        self.colorBorderToolButton = QToolButton()
+        def setColor(color):
+            pixmap = QPixmap(20,20)
+            pixmap.fill(color)
+            icon = QIcon(pixmap)
+            self.colorToolButton.setIcon(icon)
+            self.canvas.set_color(color)
+        
+        def setColorBorder(color):
+            pixmap = QPixmap(20,20)
+            pixmap.fill(color)
+            icon = QIcon(pixmap)
+            self.colorBorderToolButton.setIcon(icon)
+            self.canvas.set_color_border(color)
+        # Remplissage
+        colorMenu = ColorMenu(self, setColor)
+
+        self.colorToolButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.colorToolButton.setText("Fill")
+        self.colorToolButton.setMenu(colorMenu)
+        self.colorToolButton.setPopupMode(QToolButton.InstantPopup)
+        colorToolBar.addWidget(self.colorToolButton)
+
+        colorMenu = ColorMenu(self, setColorBorder)
+        self.colorBorderToolButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.colorBorderToolButton.setText("Border")
+        self.colorBorderToolButton.setMenu(colorMenu)
+        self.colorBorderToolButton.setPopupMode(QToolButton.InstantPopup)
+        colorToolBar.addWidget(self.colorBorderToolButton)
+        self.addToolBar( colorToolBar )
+
+        setColor(QColor(0, 255, 255))
+        setColorBorder(QColor(0, 255, 255))
+
         # Permet d'ajouter les actions de déplacer l'objet selectionné
         self.addMoveFeature()
-        
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Up:
@@ -201,29 +251,210 @@ class MainWindow(QMainWindow):
         self.log_action("Mode: select")
         self.canvas.setMode('select')
 
-    def lasso_select(self):
-        self.log_action("Mode: lasso")
-        self.canvas.setMode('lasso')
-
-    def scriboli(self):
-        self.log_action("Mode: scriboli")
-        self.canvas.setMode('scriboli')
-
     def save(self):
         self.log_action("Saving canvas")
         image = self.canvas.getImage()
         image.save('image.jpg')
 
     def log_action(self, str):
-        content = self.textEdit.toPlainText()
-        self.textEdit.setPlainText( content + "\n" + str)
+        pass
+
+# PowerPoint-Like Title Bar
+class TitleBar(QDialog):
+    def __init__(self, parent=None):
+        QWidget.__init__(self, parent)
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        css = """
+        QWidget{
+            Background: #b8442c;
+            color:white;
+            font:12px bold;
+            font-weight:bold;
+            border-radius: 1px;
+            height: 11px;
+        }
+        QDialog{
+            font-size:12px;
+            color: black;
+
+        }
+        QToolButton{
+            Background:#b8442c;
+            font-size:11px;
+        }
+        QToolButton:hover{
+            Background: #dc5939;
+            font-size:11px;}
+        """
+        self.setAutoFillBackground(True)
+        self.setBackgroundRole(QPalette.Highlight)
+        self.setStyleSheet(css) 
+        self.minimize=QToolButton(self)
+        self.minimize.setIcon(QIcon("icons/remove.png"))
+        self.maximize=QToolButton(self)
+        self.maximize.setIcon(QIcon("icons/resize.png"))
+        close=QToolButton(self)
+        close.setStyleSheet("""QToolButton:hover{
+            Background: #e81123;
+            font-size:11px;
+        }""")
+        close.setIcon(QIcon("icons/close.png"))
+        self.minimize.setMinimumSize(40,40)
+        close.setMinimumSize(40,40)
+        self.maximize.setMinimumSize(40,40)
+        label=QLabel(self)
+        label.setText("PowerPoint")
+        self.setWindowTitle("Window Title")
+        hbox=QHBoxLayout(self)
+        hbox.addWidget(label)
+        hbox.addWidget(self.minimize)
+        hbox.addWidget(self.maximize)
+        hbox.addWidget(close)
+        hbox.insertStretch(1,500)
+        hbox.setSpacing(0)
+        hbox.setContentsMargins(10,0,0,0)
+        self.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Fixed)
+        self.maxNormal=False
+        close.clicked.connect(self.close)
+        self.minimize.clicked.connect(self.showSmall)
+        self.maximize.clicked.connect(self.showMaxRestore)
+
+    def showSmall(self):
+        self.parent().showMinimized()
+
+    def showMaxRestore(self):
+        if(self.maxNormal):
+            self.parent().showNormal()
+            self.maxNormal= False
+            self.maximize.setIcon(QIcon("icons/resize.png"))
+        else:
+            self.parent().showMaximized()
+            self.maxNormal=  True
+            self.maximize.setIcon(QIcon("icons/resize.png"))
+
+    def close(self):
+        self.parent().close()
+
+    def mousePressEvent(self,event):
+        if event.button() == Qt.LeftButton:
+            self.parent().moving = True 
+            self.parent().offset = event.pos()
+
+    def mouseMoveEvent(self,event):
+        if self.parent().moving: 
+            self.parent().move(event.globalPos()-self.parent().offset)
+
+# Frame with PowerPoint Title Bar
+class PowerPoint(QFrame):
+    def __init__(self, parent=None):
+        QFrame.__init__(self, parent)
+        self.m_mouse_down= False
+        self.setFrameShape(QFrame.StyledPanel)
+        css = """
+        """
+        self.setStyleSheet(css) 
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setMouseTracking(True)
+        self.m_titleBar= TitleBar(self)
+        self.m_content= QWidget(self)
+        vbox=QVBoxLayout(self)
+        vbox.addWidget(self.m_titleBar)
+        vbox.setContentsMargins(0,0,0,0)
+        vbox.setSpacing(0)
+        layout=QVBoxLayout(self)
+        layout.addWidget(self.m_content)
+        #layout.setContentsMargins(5,5,5,5)
+        layout.setSpacing(0)
+        vbox.addLayout(layout)
+        
+        # Allows you to access the content area of the frame
+        # where widgets and layouts can be added
+        self.window = MainWindow()
+        vbox.addWidget(self.window)
+
+
+    def contentWidget(self):
+        return self.m_content
+
+    def titleBar(self):
+        return self.m_titleBar
+
+    def mousePressEvent(self,event):
+        self.m_old_pos = event.pos()
+        self.m_mouse_down = event.button()== Qt.LeftButton
+
+    def mouseMoveEvent(self,event):
+        x=event.x()
+        y=event.y()
+
+    def mouseReleaseEvent(self,event):
+        m_mouse_down=False
+
+class ColorAction(QtWidgets.QWidgetAction):
+    colorSelected = pyqtSignal(QtGui.QColor)
+
+    def __init__(self, parent):
+        super(ColorAction, self).__init__(parent)
+        widget = QtWidgets.QWidget(parent)
+        layout = QtWidgets.QGridLayout(widget)
+        layout.setSpacing(0)
+        layout.setContentsMargins(2, 2, 2, 2)
+        palette = self.palette()
+        count = len(palette)
+        rows = count // round(count ** .5)
+        for row in range(rows):
+            for column in range(count // rows):
+                color = palette.pop()
+                button = QtWidgets.QToolButton(widget)
+                button.setAutoRaise(True)
+                button.clicked.connect(
+                    lambda checked, color=color: self.handleButton(color))
+                pixmap = QtGui.QPixmap(16, 16)
+                pixmap.fill(color)
+                button.setIcon(QtGui.QIcon(pixmap))
+                layout.addWidget(button, row, column)
+        self.setDefaultWidget(widget)
+
+    def handleButton(self, color):
+        self.parent().hide()
+        self.colorSelected.emit(color)
+
+    def palette(self):
+        palette = []
+        for g in range(4):
+            for r in range(4):
+                for b in range(3):
+                    palette.append(QtGui.QColor(
+                        r * 255 // 3, g * 255 // 3, b * 255 // 2))
+        return palette
+
+class ColorMenu(QtWidgets.QMenu):
+    def __init__(self, parent=None, setColor=None):
+        super(ColorMenu, self).__init__("Colors", parent)
+        self.colorAction = ColorAction(self)
+        self.colorAction.colorSelected.connect(self.handleColorSelected)
+        self.addAction(self.colorAction)
+        self.addSeparator()
+        self.addAction('Custom Color...', lambda: self.handleColorSelected(QColorDialog.getColor()))
+        self.setColor = setColor
+
+    def handleColorSelected(self, color):
+        print(color)
+        if self.setColor is not None:
+            self.setColor(color)
+
+
     
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
     # Logiciel PowerPoint
-    window = MainWindow()
-    window.show()
+    p = PowerPoint()
+    l=QVBoxLayout(p.contentWidget())
+    l.setContentsMargins(0,0,0,0)
+    window = p.window
+    p.show()
+
     # Recommender
     R = Recommender("models/model0", parent= window)
     window.canvas.logger.recommender = R
