@@ -151,6 +151,9 @@ class CustomTextEdit(QTextEdit):
             
             # On prend en compte les touches simples
             elif keyValue.isalpha() or keyValue.isdigit() or keyValue.isprintable() or event.key() == Qt.Key_Backspace :
+                # ignorer ce cas 
+                if modifiers == Qt.ControlModifier :
+                    return 
                 self.handle_Letter()
                 return
         
@@ -171,7 +174,7 @@ class CustomTextEdit(QTextEdit):
     # on groupe copier coller
     def handle_paste(self):
         #print("J'ai collé")
-        self.updated("CopyPaste")
+        self.updated("CopyPaste (CTRL + C -> CTRL + V)")
 
     def handle_cut(self):
         #print("J'ai coupé")
@@ -251,11 +254,11 @@ class CustomTextEdit(QTextEdit):
 
     def handle_backspace(self):
         #print("Supprimer le mot")
-        self.updated("WordDel")
+        self.updated("WordDel (CTRL + Backspace)")
     
     
     def handle_replace(self):
-        self.updated("Search&Replace")
+        self.updated("Search&Replace (CTRL + R)")
         #print("replace")
     
     

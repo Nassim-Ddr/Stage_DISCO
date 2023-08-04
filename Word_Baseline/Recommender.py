@@ -34,7 +34,7 @@ class Recommender(QWidget):
         self.modelHard = HardCodedModel(texteditor,historySize=max_size_memory)
         # variable du recommender
         # self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
-        self.commands = ["WriteWord","CopyPaste","WordDel","Search&Replace"]
+        self.commands = ["WriteWord","CopyPaste (CTRL + C -> CTRL + V)","WordDel (CTRL + Backspace)","Search&Replace (CTRL + R)"]
         self.model = Model(model, self.commands)
         self.hardCodedCommands = ["CTRL+ A (SelectAll)", 
         "Shift + Fin (End) Button", 
@@ -68,13 +68,14 @@ class Recommender(QWidget):
             
             # On veut eviter de continuer a recommander
             ind = self.commands.index(pred_command)
+            #print(f' La commande utilisée est : {command} et la prédiction est : {pred_command}')
             if pred_command == command:
                 self.recommendThresholdML[ind] = self.recommendThresholdML[ind] + 1
             
             # la confiance doit etre > 95% (meme si ce n'est pas forcement un bon facteur)
             if (pred_command != "WriteWord" and confiance > 0.95 and command != pred_command):
                 # Pour eviter de recommander des la premiere suppression de mot
-                if pred_command == "WordDel" and sumstate < 4 :
+                if pred_command == "WordDel (CTRL + Backspace)" and sumstate < 4 :
                     break
                 
                 # nous avons suffisament recommande on n'affiche rien (cela sera pareil pour le modele hard code)
@@ -84,7 +85,7 @@ class Recommender(QWidget):
                     break
                 
                 # on affiche la commande predite avec la confiance
-                self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
+                self.setText(f'Predicted Command: {pred_command}\n La confiance du besoin de cette recommandation est : {confiance}')
             # on filtre le cas ou l'utilisateur ne fait que ecrire
             elif(pred_command == "WriteWord"):
                 if i != m_size-1:
