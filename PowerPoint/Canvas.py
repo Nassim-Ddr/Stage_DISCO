@@ -394,6 +394,7 @@ class Canvas(QWidget):
                 self.Lforms.remove(form)
                 self.Lforms.append(form)
             self.update()
+            self.updated("Put in Foreground")
 
     def deplaceFirst(self):
         if not self.selection.isEmpty():
@@ -401,6 +402,7 @@ class Canvas(QWidget):
                 self.Lforms.remove(form)
                 self.Lforms.insert(0, form)
             self.update()
+            self.updated("Put in Background")
 
         
         

@@ -80,12 +80,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # Edit Menu
         editMenu = bar.addMenu("Edit")
         editMenu.addAction("&delete", self.canvas.deleteSelection, QKeySequence("Backspace"))
+        editMenu.addSeparator()
         editMenu.addAction(QIcon(":/icons/copy.png"), "&Copy", self.canvas.copy_element, QKeySequence("Ctrl+C"))
         editMenu.addAction(QIcon(":/icons/paste.png"), "&Paste",  self.canvas.paste_element, QKeySequence("Ctrl+V"))
         editMenu.addAction(QIcon(":/icons/cut.png"), "&Cut", self.canvas.cut_element,  QKeySequence("Ctrl+X"))
         editMenu.addAction("&Duplicate",  self.canvas.duplicate_element, QKeySequence("Ctrl+D"))
+        editMenu.addSeparator()
         editMenu.addAction("&Group",  self.canvas.group, QKeySequence("Ctrl+G"))
         editMenu.addAction("&UnGroup",  self.canvas.ungroup, QKeySequence("Ctrl+Shift+G"))
+        editMenu.addSeparator()
         editMenu.addAction("&Randomize",  self.canvas.randomize, QKeySequence("Ctrl+R"))
 
 
