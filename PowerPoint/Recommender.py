@@ -58,6 +58,12 @@ class Recommender(QMainWindow):
         self.initUI()
         self.setCentralWidget( self.container )
 
+        # Timer
+        self.timer = QTimer(self)
+        self.timer.setInterval(10)
+        self.timer.timeout.connect(self.initMove)
+        self.mode = 1
+
 
     def initUI(self):
         QTimer.singleShot(1, self.topLeft)
@@ -67,7 +73,8 @@ class Recommender(QMainWindow):
         # no need to move the point of the geometry rect if you're going to use
         # the reference top left only
         topLeftPoint = QApplication.desktop().availableGeometry().topLeft()
-        self.move(topLeftPoint + QPoint(50,50))
+        self.move(topLeftPoint + QPoint(- self.size().width(),50))
+        self.timer.start()
         pass
 
     def paintEvent(self, _):
@@ -88,6 +95,7 @@ class Recommender(QMainWindow):
             pred_command, confiance = self.model.predictForeorBackground(self.memory[-1], autre), "Tellement confiant"
             self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
             #self.showState(self.memory[index], state)
+            self.timer.start()
             
         # ajoute l'etat precedent
         # supprime si la liste est trop grande
@@ -115,5 +123,30 @@ class Recommender(QMainWindow):
         self.ax2.imshow(b)
         self.ax3.imshow(self.model.process.getOnlyMovingObject(a,b))
         self.C.draw()
+
+
+    # Train move
+    def translate(self):
+        nb_step = 100
+        maxRight = QApplication.desktop().availableGeometry().right()
+        right = self.pos().x()
+        if right >= maxRight:
+            self.topLeft()
+        self.move(self.pos() + QPoint(5,0))
+
+    # Normal move
+    def initMove(self, waitTime = 5000):
+        self.timer.setInterval(10)
+        self.move(self.pos() + QPoint(self.mode*5,0))
+        maxRight = QApplication.desktop().availableGeometry().left()
+        if self.mode == 1:
+            if self.pos().x() >= maxRight+10:
+                self.mode = -1
+                self.timer.setInterval(waitTime)
+        else:
+            if self.pos().x() <= maxRight - self.size().width():
+                self.mode = 1
+                self.timer.stop()
+
 
 

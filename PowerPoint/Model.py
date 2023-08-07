@@ -131,6 +131,11 @@ class HardCodedModel():
         top = min(o2.top(), o2.bottom())
         left = min(o2.left(), o2.right())
         L2 = [self.stateGroup(o, (top,left)) for o in o2.objects]
+
+        #####################
+        ##  A Corriger #######
+        ######################
+        return None
         L1 = np.sort(L1)
         L2 = np.sort(L2)
         return np.all((L1 - L2) <= eps)
