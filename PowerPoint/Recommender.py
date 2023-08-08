@@ -20,12 +20,13 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from Model import *
 
+# Recommender: interface qui affiche les prédictions du modèle
 class Recommender(QMainWindow):
-    def __init__(self, model, max_size_memory = 5, parent = None):
+    def __init__(self, model, max_size_memory = 5, parent = None, show_state = False):
         QMainWindow.__init__(self, parent )
         # Interface du recommender
         self.setWindowTitle("Assistant qui bourre le pantalon")
-        b = False
+        b = True
         if b:
             self.setWindowFlags(Qt.FramelessWindowHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
@@ -41,13 +42,15 @@ class Recommender(QMainWindow):
         self.text.setMinimumSize(QSize(200,100))
         layout.addWidget(self.text)
 
-        # Affiche état
-        self.C = FigureCanvas()
-        layout.addWidget(self.C)
-        self.ax1, self.ax2, self.ax3 = self.C.figure.subplots(1,3)
-        self.ax1.axis('off')
-        self.ax2.axis('off')
-        self.ax3.axis('off')
+        self.showState = show_state
+        if show_state:
+            # Affiche état
+            self.C = FigureCanvas()
+            layout.addWidget(self.C)
+            self.ax1, self.ax2, self.ax3 = self.C.figure.subplots(1,3)
+            self.ax1.axis('off')
+            self.ax2.axis('off')
+            self.ax3.axis('off')
 
         # variable du recommender
         #self.model = Model(model, ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
@@ -92,7 +95,7 @@ class Recommender(QMainWindow):
             #preds_conf = np.array([self.model.predict(s, state) for s in self.memory])
             #index = np.argmax(preds_conf[:,1])
             #pred_command, confiance = preds_conf[index]
-            pred_command, confiance = self.model.predictForeorBackground(self.memory[-1], autre), "Tellement confiant"
+            pred_command, confiance = self.model.predictCopyAlign(self.memory[-1], autre), "Tellement confiant"
             self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
             #self.showState(self.memory[index], state)
             self.timer.start()

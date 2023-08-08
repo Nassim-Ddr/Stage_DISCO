@@ -7,10 +7,15 @@ import torchvision.transforms as T
 from PIL import Image
 from CanvasTools import *
 
+
+## Classe MODEL
+## filename: the file with Pytorch model parameters saved in 
+## classe_names: class_label mapping
+## process: pre-processing before going into the model
 class Model():
-    def __init__(self, model, classe_names = None):
-        self.model = LeNet()
-        self.model.load_state_dict(torch.load(model))
+    def __init__(self, filename, classe_names = None):
+        self.model = LeNet() # create instance of pytorch model
+        self.model.load_state_dict(torch.load(filename)) # loading parameters
         self.classe_names = classe_names
         self.process = Preprocessing()
 
@@ -20,19 +25,19 @@ class Model():
             transforms.Resize((64, 64)),
         ])
     
-    # a, b (np.array)
-    # return (prediction, confiance)
+    # a, b (np.array): precedent state, current state
+    # return (prediction, probability of estimate)
     def predict(self, a, b):
+        # Pre-processing
         b = self.process.getOnlyMovingObject(a,b)
         s = Image.fromarray(b)
         x = self.image_transform(s).reshape((1,3,64,64))
-        output = self.model(x)
-        index = output.argmax(1)
-        if self.classe_names is not None:
-            index = self.classe_names[index]
+        output = self.model(x) # prediction
+        index = output.argmax(1) # index with highest probability
+        if self.classe_names is not None: index = self.classe_names[index] # change to class label
         return index, round(output.softmax(dim=1).max().item(),3)
 
-
+# Pytorch model
 class LeNet(nn.Module):
     def __init__(self):
         super(LeNet, self).__init__()
@@ -53,12 +58,17 @@ class LeNet(nn.Module):
         x = self.fc3(x)
         return x
     
+# Crop Image: Pre-processing class: go inside pytorch transform.Compose
+# Take only the bounding box taking inside all objects in powerpint
 class crop(object):
     def __call__(self, img):
+        # indexes of non-white pixel
         a = np.where(img.mean(0) != 1)
         try:
+            # Calculate bounding box
             x1,x2,y1,y2 = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
             h,w = img[:, x1:x2,y1:y2].shape[1:]
+            # check if the bounding box is too small
             if h<64 or w<64: return img
             return img[:, x1:x2,y1:y2]
         except:
@@ -82,14 +92,13 @@ class HardCodedModel():
     args = ["AlignLeft", "AlignTop", "AlignRight", "AlignBottom"]
     D = dict()
 
-    def predict(self, a, b, eps = 20):
+    ############## Predict ######################  
+    def predictAlign(self, a, b, eps = 20):
         # Meme nombre d'objets, donc possiblement un déplacement d'objet
-        a = [(o.left(), o.top(), o.right(), o.bottom()) for o in a]
-        b = [(o.left(), o.top(), o.right(), o.bottom()) for o in b]
+        a, b = [self.pos(o) for o in a],  [self.pos(o) for o in b]
         if len(a) == len(b) and len(b)>1:
             L = None
-            A = np.array(a)
-            B = np.array(b)
+            A, B = np.array(a), np.array(b)
             D = np.zeros(4)
             index = np.where(np.abs(A-B).sum(1) != 0)[0] # on cherche l'objet qui s'est déplacé
             for o in B[index]:
@@ -97,23 +106,35 @@ class HardCodedModel():
                 D = np.where(np.abs(B - o) <= eps, 1, 0).sum(0) - 1
                 D = D[L]
             index = np.argmax(D)
-            if D[index] == 0:
-                return "Rien du tout"
+            if D[index] == 0: return "Rien du tout"
             return self.args[L[index]]
         return "Rien du tout"
     
     def predictCopyAlign(self, a, b, eps = 20):
+        # Meme nombre d'objets, donc possiblement un déplacement d'objet 
+        if len(a) == len(b) and len(b)>1:
+            A, B = np.array([self.pos(o) for o in a]), np.array([self.pos(o) for o in b])
+            D = np.zeros(4)
+            index = np.where(np.abs(A-B).sum(1) != 0)[0] # on cherche l'objet qui s'est déplacé
+            index = index[0] if len(index)>0 else None
+            if index == None: return "Rien du tout"
+            o = B[index]
+            D = np.any(np.where(np.abs(B - o) <= eps, 1, 0), axis=1)
+            D[index] = False
+            for i in np.where(D)[0]:
+                if self.compareApprox(b[index], b[i], eps): return "Align Copy Yes"
+        return "Rien du tout"
+    
+    def predictCopyDrag(self, a, b, eps = 20):
+        # Objets non groupés
         B = np.abs([self.state(o) for o in b if not isinstance(o,QRectGroup)])
         for o in B:
-            d = np.all(np.abs(B - o) <= eps, axis=1).sum() - 1
-            if d > 0:
-                return "Copy Align"
-        return self.compareGroupBetween(a,b, eps)
-    
-    def compareGroupBetween(self, a, b, eps=20):
+            # on check si y a pas un objet semblable à "o" parmi b
+            d = np.all(np.abs(B - o) <= eps, axis=1).sum() 
+            if d > 1: return "Copy + Drag"
+        # Objets groupés
         b = [o for o in b if isinstance(o,QRectGroup)]
         B = [(o.height(), o.width())  for o in b]
-        print("Filter: ", b)
         if len(B) > 1:
             for index,o in enumerate(np.abs(B[:-1])):
                 Lindex = np.all(np.abs(B - o) <= eps, axis=1)
@@ -122,52 +143,10 @@ class HardCodedModel():
                     if self.compareGroup(b[index], b[i], eps): return "Copy Group Align"
         return "Rien du Tout"
     
-    def compareGroup(self, o1, o2, D = None, eps=20):
-        if len(o2.objects) != len(o1.objects): return False
-        top = min(o1.top(), o1.bottom())
-        left = min(o1.left(), o1.right())
-        dtype = [(str(i), int) for i in range(11)]
-        L1 = [self.stateGroup(o, (top,left)) for o in o1.objects]
-        top = min(o2.top(), o2.bottom())
-        left = min(o2.left(), o2.right())
-        L2 = [self.stateGroup(o, (top,left)) for o in o2.objects]
-
-        #####################
-        ##  A Corriger #######
-        ######################
-        return None
-        L1 = np.sort(L1)
-        L2 = np.sort(L2)
-        return np.all((L1 - L2) <= eps)
-
-    def state(self, o):
-        name = o.__class__.__name__
-        if name not in self.D: self.D[name] = len(self.D)
-        return (self.D[name]*100, 
-                o.height(), o.width(), 
-                o.color.red(), o.color.green(), o.color.blue(), 
-                o.border_color.red(), o.border_color.green(), o.border_color.blue())
-    
-    def stateGroup(self, o, ref):
-        name = o.__class__.__name__
-        if name not in self.D: self.D[name] = len(self.D)
-        top, left = ref
-        return (self.D[name]*100, 
-                min(o.top(),o.bottom()) - top, min(o.left(),o.right()) - left,
-                o.height(), o.width(), 
-                o.color.red(), o.color.green(), o.color.blue(), 
-                o.border_color.red(), o.border_color.green(), o.border_color.blue())
-    
-    def argsort(self, n1, n2):
-        dtype = [(str(i),int) for i in range(len(n1[0]))]
-        n1 = np.argsort([np.array(tuple(x), dtype=dtype) for x in n1])
-        n2 = np.argsort([np.array(tuple(x), dtype=dtype) for x in n2])
-        return n1,n2
-    
     def predictForeorBackground(self, s1, s2):
         # True pas changement de taille, pas de changement de couleur
         def noChange(s1,s2, eps = 10):
-            if len(s1) != len(s2): return None,None,False
+            if len(s1) != len(s2) or len(s1)==0 or len(s2)==0: return None,None,False
             L1 = np.abs([self.state(o) for o in s1])
             L2 = np.abs([self.state(o) for o in s2])
             index1, index2 = self.argsort(L1, L2)
@@ -201,8 +180,56 @@ class HardCodedModel():
             return "Rien Du Tout"
         return "Rien du Tout"
 
+    ############# UTILE  ##################
+    def pos(self, o):
+        return np.array((o.left(), o.top(), o.right(), o.bottom()))
 
+    def state(self, o):
+        name = o.__class__.__name__
+        if name not in self.D: self.D[name] = len(self.D)
+        return (self.D[name]*100, 
+                o.height(), o.width(), 
+                o.color.red(), o.color.green(), o.color.blue(), 
+                o.border_color.red(), o.border_color.green(), o.border_color.blue())
+    
+    def stateGroup(self, o, ref):
+        name = o.__class__.__name__
+        if name not in self.D: self.D[name] = len(self.D)
+        top, left = ref
+        return (self.D[name]*100, 
+                min(o.top(),o.bottom()) - top, min(o.left(),o.right()) - left,
+                o.height(), o.width(), 
+                o.color.red(), o.color.green(), o.color.blue(), 
+                o.border_color.red(), o.border_color.green(), o.border_color.blue())
 
+    def argsort(self, n1, n2):
+        dtype = [(str(i),int) for i in range(len(n1[0]))]
+        n1 = np.argsort([np.array(tuple(x), dtype=dtype) for x in n1])
+        n2 = np.argsort([np.array(tuple(x), dtype=dtype) for x in n2])
+        return n1,n2
+
+    def compareApprox(self, o1, o2, eps=20):
+        if o1 == o2: return False
+        if o1.__class__.__name__ != o2.__class__.__name__: return False
+        if isinstance(o1, QRectGroup): return self.compareGroup(o1, o2, eps)
+        o1 = np.array(self.state(o1))
+        o2 = np.array(self.state(o2))
+        return np.all(np.abs(o1 - o2) <= eps)
+
+    def compareGroup(self, o1, o2, D = None, eps=20):
+        if len(o2.objects) != len(o1.objects): return False
+        # getState
+        top, left = min(o1.top(), o1.bottom()), min(o1.left(), o1.right())
+        L1 = [self.stateGroup(o, (top,left)) for o in o1.objects]
+        top, left = min(o2.top(), o2.bottom()), min(o2.left(), o2.right())
+        L2 = [self.stateGroup(o, (top,left)) for o in o2.objects]
+        # Sorting objects
+        index1, index2 = self.argsort(L1, L2)
+        L1 = np.array(L1)[index1]
+        L2 = np.array(L2)[index2]
+        return np.all((L1 - L2) <= eps)
+
+    
 
             
 

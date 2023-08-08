@@ -336,6 +336,7 @@ class TitleBar(QDialog):
             self.maximize.setIcon(QIcon("icons/resize.png"))
 
     def close(self):
+        QCoreApplication.quit()
         self.parent().close()
 
     def mousePressEvent(self,event):
@@ -459,7 +460,7 @@ if __name__=="__main__":
     p.show()
 
     # Recommender
-    R = Recommender("models/model0", parent= window)
+    R = Recommender("models/model0")
     window.canvas.logger.recommender = R
 
     app.exec_()
