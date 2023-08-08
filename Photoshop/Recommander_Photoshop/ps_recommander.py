@@ -18,6 +18,7 @@ from torchvision.transforms import transforms
 import cv2
 import numpy as np
 from matplotlib.image import imread
+from torchvision.models import resnet50, ResNet50_Weights
 
 class PSDBase(object):
     RESIZE_DEFAULT              = 1
@@ -343,11 +344,22 @@ class Photoshop_Recommander() :
             else "cpu"
         )
         
-        self.model_normal = LeNet().to(device)
-        self.model_normal.load_state_dict(torch.load("../models/model_retrain"))
+        self.model_normal = resnet50(weights=ResNet50_Weights.DEFAULT).to(device)
+        num_features = self.model_normal.fc.in_features
+        num_classes = 8
+        self.model_normal.fc = nn.Sequential(
+            nn.Linear(num_features, 1000),  # New layer with 1000 outputs (matches pre-trained model)
+            nn.ReLU(),                       
+            nn.Linear(1000, num_classes)    # Final layer with 8 outputs for your classification task
+        )
+        self.model_normal = self.model_normal.cuda()
+        self.model_normal.load_state_dict(torch.load("../models/model_resnet_retrain"))
         
+
         self.model_crop = LeNet().to(device)
         self.model_crop.load_state_dict(torch.load("../models/model_retrain_crop"))
+        
+    
 
         self.command_labels = ["Diffuse Filter", "Edges Filter", "Gaussian filter", "Pinch Filter", "Sharpen Filter", "Surface Filter", "Twirl Filter", "Wave Filter"]
 
@@ -437,6 +449,7 @@ class Photoshop_Recommander() :
             self.ask_normal_model(self.old_state, self.current_state)
 
     def ask_model(self, img1, img2) : 
+
         transform = transforms.Compose([
             transforms.Resize((224, 224)),  
             transforms.ToTensor(),
@@ -472,19 +485,16 @@ class Photoshop_Recommander() :
             print("model_crop recommande : " + str(predicted_class_crop.item()))
         
     def ask_normal_model(self, img1, img2) : 
-        transform = transforms.Compose([
-            transforms.Resize((224, 224)),  
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), 
-        ])
+        weights = ResNet50_Weights.DEFAULT
+        preprocess = weights.transforms()
 
-        image_tensor = transform(Image.fromarray(np.hstack((img1, img2)))).unsqueeze(0)
+        image_tensor = preprocess(Image.fromarray(np.hstack((img1, img2)))).unsqueeze(0)
         image_tensor = image_tensor.cuda()
         with torch.no_grad() : 
             output = self.model_normal(image_tensor)
-        _, predicted_class = torch.max(output, 1)
+        confidence , predicted_class = torch.max(output, 1)
 
-        print("we recommend you to use the command : " + str(predicted_class.item()) + " : " + self.command_labels[predicted_class.item()])
+        print("we recommend you to use the command : " + str(predicted_class.item()) + " : " + self.command_labels[predicted_class.item()] + " - confidence : " + str(confidence.item()))
 
     def recomend_command(self, command) : 
         print("recommend command : " + command)
