@@ -14,6 +14,7 @@ import pandas as pd
 from Recommender import *
 import random 
 import spacy
+import copy
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
@@ -479,6 +480,14 @@ class MainWindow(QMainWindow):
         texteditor = self.text_edit
         dice = np.random.randint(2,7)
         direction = (np.random.random() < 0.5)
+        oldCursor = texteditor.textCursor()
+        end = len(texteditor.toPlainText())
+
+        # We force direction if at end of start of document because makes no sense otherwise
+        if oldCursor.position() == end:
+            direction = False
+        elif oldCursor.position() == 0:
+            direction = True
 
         # direction selected (left of right)
         if direction :
@@ -501,10 +510,15 @@ class MainWindow(QMainWindow):
 
         # Pasting the text
         QTest.keyPress(texteditor,Qt.Key_V,  Qt.ControlModifier)
+
+        texteditor.setTextCursor(oldCursor)
+
     
     def writeWord(self):
         randomletters = [random.choice('abcdefghijklmnopqrstuvwxyz') for i in range(np.random.randint(1,11))]
         texteditor = self.text_edit
+        oldCursor = texteditor.textCursor()
+        #oldPos = oldCursor.position()
 
 
         # move the cursor to the end of the document
@@ -517,6 +531,11 @@ class MainWindow(QMainWindow):
             QTest.keyClick(self.text_edit, char)
             QTest.qWait(2)  # Wait for a short duration between each character
             self.text_edit.updated("WriteWord")
+
+        #print(f'old pos {oldCursor.position()} new pos {cursor.position()}')
+        
+
+        texteditor.setTextCursor(oldCursor)
 
 
     def toggle_bold(self, boolgras):
@@ -608,6 +627,8 @@ def useAct(action,app,window):
 
             # Get names
             replaceable = vectorizer.get_feature_names_out()
+            
+            
 
             # the word to replace
             toreplace = np.random.choice(replaceable)
