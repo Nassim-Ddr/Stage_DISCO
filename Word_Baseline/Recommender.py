@@ -10,18 +10,25 @@ from PIL import Image
 from HardCodedModel import HardCodedModel
 from sklearn.preprocessing import normalize
 
-class Recommender(QWidget):
+class Recommender(QMainWindow):
     def __init__(self, model,texteditor, max_size_memory = 10, hardCoded = False):
         super().__init__()
         # Interface du recommender
         self.setWindowTitle("Assistant qui bourre le pantalon")
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        layout.addStretch()
-        
-        #self.setStyleSheet('background-color: lightblue;')
-        self.setLayout(layout)
-        self.text = QTextEdit(self)
+        b = True
+        if b:
+            self.setWindowFlags(Qt.FramelessWindowHint)
+            self.setAttribute(Qt.WA_NoSystemBackground, True)
+            self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setMinimumSize(QSize(300,300))
+        self.container = QWidget()
+        layout = QVBoxLayout(self.container)
+        # Affichage de la recommandation
+        self.text = QLabel(self.container)
+        self.text.setText("HELLO WORLD")
+        self.text.setStyleSheet("margin-left: 10px; border-radius: 20px; background: white; color: #4A0C46; font-size:15px")
+        self.text.setAlignment(Qt.AlignCenter)
+        self.text.setMinimumSize(QSize(200,100))
         layout.addWidget(self.text)
 
         # memory contenant les donnees pour le modele appris
@@ -49,8 +56,28 @@ class Recommender(QWidget):
         self.recommendThreshold = np.zeros(len(self.hardCodedCommands))
         self.recommendThresholdML = np.zeros(4)
         self.stopRecom = 2
+
+        self.initUI()
+        self.setCentralWidget( self.container )
+
+        # Timer
+        self.timer = QTimer(self)
+        self.timer.setInterval(10)
+        self.timer.timeout.connect(self.initMove)
+        self.mode = 1
+    
+    def initUI(self):
+        QTimer.singleShot(1, self.topLeft)
+        self.show()
+    
+    def topLeft(self):
+        # no need to move the point of the geometry rect if you're going to use
+        # the reference top left only
+        topLeftPoint = QApplication.desktop().availableGeometry().topLeft()
+        self.move(topLeftPoint + QPoint(- self.size().width(),50))
+        self.timer.start()
+        pass
         
-            
 
     def update(self, state,stateHardcode,texteditor,command):
         #state, label = state
@@ -86,6 +113,7 @@ class Recommender(QWidget):
                 
                 # on affiche la commande predite avec la confiance
                 self.setText(f'Predicted Command: {pred_command}\n La confiance du besoin de cette recommandation est : {confiance}')
+                self.timer.start()
             # on filtre le cas ou l'utilisateur ne fait que ecrire
             elif(pred_command == "WriteWord"):
                 if i != m_size-1:
@@ -137,6 +165,7 @@ class Recommender(QWidget):
                 self.recommendThreshold[ind] = self.recommendThreshold[ind] + 1
             
             self.setText(pred_command)
+            self.timer.start()
             break
         # ajoute l'etat precedent
         # supprime si la liste est trop grande
@@ -144,7 +173,21 @@ class Recommender(QWidget):
         if m_size >= self.max_size_memory: self.memory2.pop(0)
 
     def setText(self, text):
-        self.text.setPlainText(text)
+        self.text.setText(text)
+    
+    # Normal move
+    def initMove(self, waitTime = 2000):
+        self.timer.setInterval(10)
+        self.move(self.pos() + QPoint(self.mode*5,0))
+        maxRight = QApplication.desktop().availableGeometry().left()
+        if self.mode == 1:
+            if self.pos().x() >= maxRight+10:
+                self.mode = -1
+                self.timer.setInterval(waitTime)
+        else:
+            if self.pos().x() <= maxRight - self.size().width():
+                self.mode = 1
+                self.timer.stop()
 
 class Model():
     def __init__(self, model, classe_names = None):
