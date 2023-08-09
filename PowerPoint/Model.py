@@ -93,6 +93,13 @@ class HardCodedModel():
     D = dict()
 
     ############## Predict ######################  
+    def predict(self, a, b, eps = 20):
+        L = [self.predictForeorBackground, self.predictCopyAlign, self.predictAlign, self.predictCopyDrag]
+        for f in L:
+            pred = f(a,b, eps)
+            if pred is not None: return pred
+        return "Rien du Tout"
+        
     def predictAlign(self, a, b, eps = 20):
         # Meme nombre d'objets, donc possiblement un déplacement d'objet
         a, b = [self.pos(o) for o in a],  [self.pos(o) for o in b]
@@ -106,9 +113,9 @@ class HardCodedModel():
                 D = np.where(np.abs(B - o) <= eps, 1, 0).sum(0) - 1
                 D = D[L]
             index = np.argmax(D)
-            if D[index] == 0: return "Rien du tout"
+            if D[index] == 0: return 
             return self.args[L[index]]
-        return "Rien du tout"
+        return 
     
     def predictCopyAlign(self, a, b, eps = 20):
         # Meme nombre d'objets, donc possiblement un déplacement d'objet 
@@ -117,13 +124,13 @@ class HardCodedModel():
             D = np.zeros(4)
             index = np.where(np.abs(A-B).sum(1) != 0)[0] # on cherche l'objet qui s'est déplacé
             index = index[0] if len(index)>0 else None
-            if index == None: return "Rien du tout"
+            if index == None: return 
             o = B[index]
             D = np.any(np.where(np.abs(B - o) <= eps, 1, 0), axis=1)
             D[index] = False
             for i in np.where(D)[0]:
                 if self.compareApprox(b[index], b[i], eps): return "Align Copy Yes"
-        return "Rien du tout"
+        return 
     
     def predictCopyDrag(self, a, b, eps = 20):
         # Objets non groupés
@@ -141,9 +148,9 @@ class HardCodedModel():
                 Lindex[index] = False
                 for i in np.where(Lindex)[0]: 
                     if self.compareGroup(b[index], b[i], eps): return "Copy Group Align"
-        return "Rien du Tout"
+        return 
     
-    def predictForeorBackground(self, s1, s2):
+    def predictForeorBackground(self, s1, s2, eps = 20):
         # True pas changement de taille, pas de changement de couleur
         def noChange(s1,s2, eps = 10):
             if len(s1) != len(s2) or len(s1)==0 or len(s2)==0: return None,None,False
@@ -174,11 +181,11 @@ class HardCodedModel():
             B = B[index][::-1]
             R = R[index][::-1]
             for i,x in enumerate(B):
-                if np.abs(R[i]).sum() == 0: return "Rien Du Tout"
+                if np.abs(R[i]).sum() == 0: return 
                 if np.any(x>0) and np.all(x>=0): return "Premier Plan"
                 if np.any(x<0) and np.all(x<=0): return "Arriere Plan"
-            return "Rien Du Tout"
-        return "Rien du Tout"
+            return 
+        return 
 
     ############# UTILE  ##################
     def pos(self, o):
