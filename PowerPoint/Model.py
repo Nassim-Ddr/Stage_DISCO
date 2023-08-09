@@ -102,10 +102,14 @@ class HardCodedModel():
         
     def predictAlign(self, a, b, eps = 20):
         # Meme nombre d'objets, donc possiblement un déplacement d'objet
+        index1, index2, r = self.noChange(a, b, self.stateGroup, eps=1)
         a, b = [self.pos(o) for o in a],  [self.pos(o) for o in b]
-        if len(a) == len(b) and len(b)>1:
+        ########## NO CHANGE A Faire ###############
+        if len(a) == len(b) and len(b)>1 and not r:
             L = None
             A, B = np.array(a), np.array(b)
+            A = A[index1]
+            B = B[index2] 
             D = np.zeros(4)
             index = np.where(np.abs(A-B).sum(1) != 0)[0] # on cherche l'objet qui s'est déplacé
             for o in B[index]:
@@ -152,13 +156,7 @@ class HardCodedModel():
     
     def predictForeorBackground(self, s1, s2, eps = 20):
         # True pas changement de taille, pas de changement de couleur
-        def noChange(s1,s2, eps = 10):
-            if len(s1) != len(s2) or len(s1)==0 or len(s2)==0: return None,None,False
-            L1 = np.abs([self.state(o) for o in s1])
-            L2 = np.abs([self.state(o) for o in s2])
-            index1, index2 = self.argsort(L1, L2)
-            return index1, index2, np.all((L1[index1] - L2[index2]) <= eps)
-        index1, index2, r = noChange(s1,s2)
+        index1, index2, r = self.noChange(s1,s2, self.state)
         if r:
             # relation 1 vs 1
             def f(o1, o2, i,j):
@@ -199,7 +197,7 @@ class HardCodedModel():
                 o.color.red(), o.color.green(), o.color.blue(), 
                 o.border_color.red(), o.border_color.green(), o.border_color.blue())
     
-    def stateGroup(self, o, ref):
+    def stateGroup(self, o, ref = (0,0)):
         name = o.__class__.__name__
         if name not in self.D: self.D[name] = len(self.D)
         top, left = ref
@@ -236,7 +234,12 @@ class HardCodedModel():
         L2 = np.array(L2)[index2]
         return np.all((L1 - L2) <= eps)
 
-    
+    def noChange(self, s1,s2, state_function, eps = 10):
+        if len(s1) != len(s2) or len(s1)==0 or len(s2)==0: return None,None,False
+        L1 = np.abs([state_function(o) for o in s1])
+        L2 = np.abs([state_function(o) for o in s2])
+        index1, index2 = self.argsort(L1, L2)
+        return index1, index2, np.all((L1[index1] - L2[index2]) <= eps)
 
             
 
