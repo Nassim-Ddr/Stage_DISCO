@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.nn.functional as nnf
 import numpy as np
 from torchvision.models import resnet50, ResNet50_Weights
+from utils import *
 
 # TODO : 
 #   Add functions to test single images
@@ -155,9 +156,6 @@ def test_resnet_3(dataloader, model_1, model_2, model_3) :
         y_true.extend(yd.tolist())
 
     return y_true, y_score
-
-
-
 
 
 

@@ -133,6 +133,46 @@ def find_bb(img_org_name, img_edited_name, path_img_org, path_img_edt, save_fold
     pilimg = Image.fromarray(cv2.cvtColor(final_image, cv2.COLOR_BGR2RGB))
     pilimg.save(save_folder + img_edited_name + "_bb" + ".jpg")
 
+def get_bb(img_org, img_edt) : 
+    image1 = img_org
+    image2 = img_edt
+
+    edited_areas = find_edited_areas(image1, image2, min_area=70)
+
+    scale_factor = 1
+
+    min_x = min_y = 100000
+    max_x = max_y = 0
+
+    images_list = []
+
+    if len(edited_areas) > 0:
+        for i, (x, y, w, h) in enumerate(edited_areas):
+            scaled_w = int(w * scale_factor)
+            scaled_h = int(h * scale_factor)
+            scaled_x = max(0, int(x - (scaled_w - w) / 2))
+            scaled_y = max(0, int(y - (scaled_h - h) / 2))
+
+            cropped_image1 = image1[scaled_y:scaled_y + scaled_h, scaled_x:scaled_x + scaled_w]
+            cropped_image2 = image2[scaled_y:scaled_y + scaled_h, scaled_x:scaled_x + scaled_w]
+            
+            final_image_cropped = np.hstack((cropped_image1, cropped_image2))
+            images_list.append(final_image_cropped)
+            
+            if (min_x > scaled_x) : min_x = scaled_x
+            if (min_y > scaled_y) : min_y = scaled_y
+            if (max_x < scaled_x + scaled_w) : max_x = scaled_x + scaled_w 
+            if (max_y < scaled_y + scaled_h) : max_y = scaled_y + scaled_h 
+            
+    else:
+        return [np.hstack((image1, image2))]
+
+    cropped_image1 = image1[min_y:max_y, min_x:max_x]
+    cropped_image2 = image2[min_y:max_y, min_x:max_x]      
+    final_image = np.hstack((cropped_image1, cropped_image2))
+    images_list.append(final_image)
+    return images_list
+
 #Rewrite this with paths in the parameters instead of dictionaries.
 def generate_pair_imgs_cropped(d_edited_names, path_imgs_org, path_imgs_edt, save_path, min_area=70, threshold=30, scale_factor=1.5) : 
     for img in d_edited_names : 
