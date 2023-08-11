@@ -3,9 +3,7 @@
 import os
 import sys
 import win32com.client
-import win32gui
 from pyautogui import press, write, hotkey
-import random
 import time
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QPushButton, QMessageBox, QWidget, QVBoxLayout
