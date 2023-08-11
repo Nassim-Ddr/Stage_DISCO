@@ -3,7 +3,6 @@ import re
 import pandas as pd
 import csv
 from time import sleep
-import spacy
 import string 
 
 from sklearn.feature_extraction.text import CountVectorizer

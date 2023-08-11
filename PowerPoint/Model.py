@@ -102,7 +102,7 @@ class HardCodedModel():
         
     def predictAlign(self, a, b, eps = 20):
         # Meme nombre d'objets, donc possiblement un déplacement d'objet
-        index1, index2, r = self.noChange(a, b, self.stateGroup, eps=1)
+        index1, index2, r = self.noChange(a, b, self.stateGroup, eps=20)
         a, b = [self.pos(o) for o in a],  [self.pos(o) for o in b]
         ########## NO CHANGE A Faire ###############
         if len(a) == len(b) and len(b)>1 and not r:
@@ -133,7 +133,7 @@ class HardCodedModel():
             D = np.any(np.where(np.abs(B - o) <= eps, 1, 0), axis=1)
             D[index] = False
             for i in np.where(D)[0]:
-                if self.compareApprox(b[index], b[i], eps): return "Align Copy Yes"
+                if self.compareApprox(b[index], b[i], eps): return "Align Copy"
         return 
     
     def predictCopyDrag(self, a, b, eps = 20):

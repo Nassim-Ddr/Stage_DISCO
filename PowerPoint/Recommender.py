@@ -28,7 +28,7 @@ class Recommender(QMainWindow):
         self.setWindowTitle("Assistant qui bourre le pantalon")
         b = True
         if b:
-            self.setWindowFlags(Qt.FramelessWindowHint)
+            self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
             self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setMinimumSize(QSize(250,150))
@@ -37,7 +37,7 @@ class Recommender(QMainWindow):
         # Affichage de la recommandation
         self.text = QLabel(self.container)
         self.text.setText("HELLO WORLD")
-        self.text.setStyleSheet("margin-left: 10px; border-radius: 20px; background: white; color: #4A0C46; font-size:12px")
+        self.text.setStyleSheet("margin-left: 10px; border-radius: 20px; background: silver; color: #4A0C46; font-size:15px")
         self.text.setAlignment(Qt.AlignCenter)
         self.text.setMinimumSize(QSize(200,100))
         layout.addWidget(self.text)
@@ -75,8 +75,8 @@ class Recommender(QMainWindow):
     def topLeft(self):
         # no need to move the point of the geometry rect if you're going to use
         # the reference top left only
-        topLeftPoint = QApplication.desktop().availableGeometry().topLeft()
-        self.move(topLeftPoint + QPoint(- self.size().width(),50))
+        topLeftPoint = QApplication.desktop().availableGeometry().bottomLeft()
+        self.move(topLeftPoint + QPoint(- self.size().width(),-300))
         self.timer.start()
         pass
 
