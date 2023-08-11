@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.nn.functional as nnf
 import numpy as np
 from torchvision.models import resnet50, ResNet50_Weights
-from utils import *
+from torchvision.transforms import transforms
 
 # TODO : 
 #   Add functions to test single images
@@ -29,6 +29,19 @@ class LeNet(nn.Module):
         x = self.fc3(x)
         return x
 
+def load_LeNet(dict_path) : 
+    model = LeNet()
+    model.load_state_dict(torch.load(dict_path))
+    return model
+
+def LeNet_Preprocess() : 
+    preprocess = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    return preprocess 
+
 def ResNet() : 
     model = resnet50(weights=ResNet50_Weights.DEFAULT)
     num_features = model.fc.in_features
@@ -39,7 +52,18 @@ def ResNet() :
         nn.Linear(1000, num_classes)     # Final layer with 8 outputs for your classification task
     )
     model = model.cuda()
+
     return model
+
+def load_ResNet(dict_path) : 
+    model = ResNet()
+    model.load_state_dict(torch.load(dict_path))
+    return model
+
+def ResNet_Preprocess() : 
+    weights = ResNet50_Weights.DEFAULT
+    preprocess = weights.transforms()
+    return preprocess
 
 device = (
     "cuda"
