@@ -12,7 +12,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from Canvas import *
 from Recommender import *
-import resources
+import icons.resources
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent = None ):
@@ -80,12 +80,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # Edit Menu
         editMenu = bar.addMenu("Edit")
         editMenu.addAction("&delete", self.canvas.deleteSelection, QKeySequence("Backspace"))
+        editMenu.addSeparator()
         editMenu.addAction(QIcon(":/icons/copy.png"), "&Copy", self.canvas.copy_element, QKeySequence("Ctrl+C"))
         editMenu.addAction(QIcon(":/icons/paste.png"), "&Paste",  self.canvas.paste_element, QKeySequence("Ctrl+V"))
         editMenu.addAction(QIcon(":/icons/cut.png"), "&Cut", self.canvas.cut_element,  QKeySequence("Ctrl+X"))
         editMenu.addAction("&Duplicate",  self.canvas.duplicate_element, QKeySequence("Ctrl+D"))
+        editMenu.addSeparator()
         editMenu.addAction("&Group",  self.canvas.group, QKeySequence("Ctrl+G"))
         editMenu.addAction("&UnGroup",  self.canvas.ungroup, QKeySequence("Ctrl+Shift+G"))
+        editMenu.addSeparator()
         editMenu.addAction("&Randomize",  self.canvas.randomize, QKeySequence("Ctrl+R"))
 
 
@@ -333,6 +336,7 @@ class TitleBar(QDialog):
             self.maximize.setIcon(QIcon("icons/resize.png"))
 
     def close(self):
+        QCoreApplication.quit()
         self.parent().close()
 
     def mousePressEvent(self,event):
@@ -456,7 +460,7 @@ if __name__=="__main__":
     p.show()
 
     # Recommender
-    R = Recommender("models/model0", parent= window)
+    R = Recommender("models/model0")
     window.canvas.logger.recommender = R
 
     app.exec_()

@@ -33,6 +33,7 @@ class Canvas(QWidget):
         self.alignTool = AlignTool()
         self.copy = None # figures stocké en copy
         self.copyAlign = None
+
         self.cursorPos = None
         self.pStart = None
         
@@ -63,14 +64,15 @@ class Canvas(QWidget):
         elif self.mode == 'select':
             p = event.pos()/self.scale - self.painterTranslation
             f = self.selection.find(self.Lforms, p)
-            if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            modifiers = QApplication.keyboardModifiers()
+            if modifiers == Qt.ShiftModifier:
                 if f is None: pass
                 elif self.selection.isEmpty(): self.selection.add_element(f)
                 elif not self.selection.contains(f):
                     self.selection.add_element(f)
                 else:
                     self.selection.remove_element(f)
-            elif  QApplication.keyboardModifiers() == Qt.ControlModifier:
+            elif  modifiers == Qt.ControlModifier or  modifiers == (Qt.ControlModifier | Qt.ShiftModifier):
                 if f is None: pass
                 elif not self.selection.contains(f):
                     self.selection.add_element(f)
@@ -100,7 +102,6 @@ class Canvas(QWidget):
                             
     def mouseMoveEvent(self, event):
         if self.pStart != None:
-            #print("ok")
             # Si le canvas est deplace, il faut recentre le curseur
             oldV = (self.cursorPos - self.pStart)
             self.cursorPos = event.pos()
@@ -122,13 +123,21 @@ class Canvas(QWidget):
                 self.pStart = self.cursorPos
             
             elif self.mode == 'select':
-                self.cursorPos= (self.cursorPos/self.scale - self.painterTranslation)
+                modifiers = QApplication.keyboardModifiers()
                 self.paste_element((0,0), 'align')
                 self.selection.element = None
-                V = self.cursorPos - self.pStart
-                for o in self.selection.selected:
-                    o.translate(V)
-                self.pStart = self.cursorPos
+                self.cursorPos= (self.cursorPos/self.scale - self.painterTranslation)
+                # AlignCopy move
+                if modifiers == (Qt.ControlModifier | Qt.ShiftModifier): 
+                    V = self.cursorPos - self.pStart
+                    V.setY(0) if np.abs(V.x()) > np.abs(V.y()) else V.setX(0)
+                    oldV.setY(0) if np.abs(oldV.x()) > np.abs(oldV.y()) else oldV.setX(0)
+                    for o in self.selection.selected: o.translate(-oldV)
+                    for o in self.selection.selected: o.translate(V)
+                else: # Normal move
+                    V = self.cursorPos - self.pStart
+                    for o in self.selection.selected: o.translate(V)
+                    self.pStart = self.cursorPos
             self.update()
 
     def updated(self, command):
@@ -394,6 +403,7 @@ class Canvas(QWidget):
                 self.Lforms.remove(form)
                 self.Lforms.append(form)
             self.update()
+            self.updated("Put in Foreground")
 
     def deplaceFirst(self):
         if not self.selection.isEmpty():
@@ -401,6 +411,7 @@ class Canvas(QWidget):
                 self.Lforms.remove(form)
                 self.Lforms.insert(0, form)
             self.update()
+            self.updated("Put in Background")
 
         
         

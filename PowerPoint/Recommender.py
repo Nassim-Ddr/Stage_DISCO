@@ -20,34 +20,37 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from Model import *
 
+# Recommender: interface qui affiche les prédictions du modèle
 class Recommender(QMainWindow):
-    def __init__(self, model, max_size_memory = 5, parent = None):
+    def __init__(self, model, max_size_memory = 5, parent = None, show_state = False):
         QMainWindow.__init__(self, parent )
         # Interface du recommender
         self.setWindowTitle("Assistant qui bourre le pantalon")
-        b = False
+        b = True
         if b:
             self.setWindowFlags(Qt.FramelessWindowHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
             self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setMinimumSize(QSize(300,300))
+        self.setMinimumSize(QSize(250,150))
         self.container = QWidget()
         layout = QVBoxLayout(self.container)
         # Affichage de la recommandation
         self.text = QLabel(self.container)
         self.text.setText("HELLO WORLD")
-        self.text.setStyleSheet("margin-left: 10px; border-radius: 20px; background: white; color: #4A0C46; font-size:15px")
+        self.text.setStyleSheet("margin-left: 10px; border-radius: 20px; background: white; color: #4A0C46; font-size:12px")
         self.text.setAlignment(Qt.AlignCenter)
         self.text.setMinimumSize(QSize(200,100))
         layout.addWidget(self.text)
 
-        # Affiche état
-        self.C = FigureCanvas()
-        layout.addWidget(self.C)
-        self.ax1, self.ax2, self.ax3 = self.C.figure.subplots(1,3)
-        self.ax1.axis('off')
-        self.ax2.axis('off')
-        self.ax3.axis('off')
+        self.showState = show_state
+        if show_state:
+            # Affiche état
+            self.C = FigureCanvas()
+            layout.addWidget(self.C)
+            self.ax1, self.ax2, self.ax3 = self.C.figure.subplots(1,3)
+            self.ax1.axis('off')
+            self.ax2.axis('off')
+            self.ax3.axis('off')
 
         # variable du recommender
         #self.model = Model(model, ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
@@ -58,6 +61,12 @@ class Recommender(QMainWindow):
         self.initUI()
         self.setCentralWidget( self.container )
 
+        # Timer
+        self.timer = QTimer(self)
+        self.timer.setInterval(10)
+        self.timer.timeout.connect(self.initMove)
+        self.mode = 1
+
 
     def initUI(self):
         QTimer.singleShot(1, self.topLeft)
@@ -67,7 +76,8 @@ class Recommender(QMainWindow):
         # no need to move the point of the geometry rect if you're going to use
         # the reference top left only
         topLeftPoint = QApplication.desktop().availableGeometry().topLeft()
-        self.move(topLeftPoint + QPoint(50,50))
+        self.move(topLeftPoint + QPoint(- self.size().width(),50))
+        self.timer.start()
         pass
 
     def paintEvent(self, _):
@@ -86,8 +96,11 @@ class Recommender(QMainWindow):
             #index = np.argmax(preds_conf[:,1])
             #pred_command, confiance = preds_conf[index]
             pred_command, confiance = self.model.predict(self.memory[-1], autre), "Tellement confiant"
-            self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
-            #self.showState(self.memory[index], state)
+            if pred_command != 'Rien du Tout': 
+                self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
+                #self.showState(self.memory[index], state)
+                self.mode = 1
+                self.timer.start()
             
         # ajoute l'etat precedent
         # supprime si la liste est trop grande
@@ -115,5 +128,29 @@ class Recommender(QMainWindow):
         self.ax2.imshow(b)
         self.ax3.imshow(self.model.process.getOnlyMovingObject(a,b))
         self.C.draw()
+
+    # Train move
+    def translate(self):
+        nb_step = 100
+        maxRight = QApplication.desktop().availableGeometry().right()
+        right = self.pos().x()
+        if right >= maxRight:
+            self.topLeft()
+        self.move(self.pos() + QPoint(5,0))
+
+    # Normal move
+    def initMove(self, waitTime = 2000):
+        self.timer.setInterval(10)
+        self.move(self.pos() + QPoint(self.mode*5,0))
+        maxRight = QApplication.desktop().availableGeometry().left()
+        if self.mode == 1:
+            if self.pos().x() >= maxRight+10:
+                self.mode = -1
+                self.timer.setInterval(waitTime)
+        else:
+            if self.pos().x() <= maxRight - self.size().width():
+                self.mode = 1
+                self.timer.stop()
+
 
 

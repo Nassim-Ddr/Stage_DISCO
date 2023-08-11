@@ -13,6 +13,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
 from Recommender import *
 import random 
+import spacy
+import copy
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
@@ -74,20 +76,24 @@ class CustomTextEdit(QTextEdit):
         # elif event.key() == Qt.Key_B and modifiers == Qt.ControlModifier:
         #     self.handle_bold()
 
+        if event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
+            self.handle_paste()
+            return
+
         # Detection que lorsque le logiciel est en live 
         if not self.isWrite:
             # if event.key() == Qt.Key_X and modifiers == Qt.ControlModifier:
             #     self.handle_cut()
-            if event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
-                self.handle_paste()
-                return
+            # if event.key() == Qt.Key_V and modifiers == Qt.ControlModifier:
+            #     self.handle_paste()
+            #     return
             # elif event.key() == Qt.Key_Z and modifiers == Qt.ControlModifier:
             #     self.handle_undo()
             # elif event.key() == Qt.Key_Y and modifiers == Qt.ControlModifier:
             #     self.handle_redo()
 
             # selection de mot
-            elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Left:
+            if (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Left:
                 self.handle_WordSelectionL()
                 return
             elif (modifiers & Qt.ControlModifier) and (modifiers & Qt.ShiftModifier) and event.key() == Qt.Key_Right:
@@ -151,6 +157,9 @@ class CustomTextEdit(QTextEdit):
             
             # On prend en compte les touches simples
             elif keyValue.isalpha() or keyValue.isdigit() or keyValue.isprintable() or event.key() == Qt.Key_Backspace :
+                # ignorer ce cas 
+                if modifiers == Qt.ControlModifier :
+                    return 
                 self.handle_Letter()
                 return
         
@@ -171,7 +180,7 @@ class CustomTextEdit(QTextEdit):
     # on groupe copier coller
     def handle_paste(self):
         #print("J'ai collé")
-        self.updated("CopyPaste")
+        self.updated("CopyPaste (CTRL + C -> CTRL + V)")
 
     def handle_cut(self):
         #print("J'ai coupé")
@@ -251,11 +260,11 @@ class CustomTextEdit(QTextEdit):
 
     def handle_backspace(self):
         #print("Supprimer le mot")
-        self.updated("WordDel")
+        self.updated("WordDel (CTRL + Backspace)")
     
     
     def handle_replace(self):
-        self.updated("Search&Replace")
+        self.updated("Search&Replace (CTRL + R)")
         #print("replace")
     
     
@@ -471,6 +480,14 @@ class MainWindow(QMainWindow):
         texteditor = self.text_edit
         dice = np.random.randint(2,7)
         direction = (np.random.random() < 0.5)
+        oldCursor = texteditor.textCursor()
+        end = len(texteditor.toPlainText())
+
+        # We force direction if at end of start of document because makes no sense otherwise
+        if oldCursor.position() == end:
+            direction = False
+        elif oldCursor.position() == 0:
+            direction = True
 
         # direction selected (left of right)
         if direction :
@@ -493,10 +510,15 @@ class MainWindow(QMainWindow):
 
         # Pasting the text
         QTest.keyPress(texteditor,Qt.Key_V,  Qt.ControlModifier)
+
+        texteditor.setTextCursor(oldCursor)
+
     
     def writeWord(self):
         randomletters = [random.choice('abcdefghijklmnopqrstuvwxyz') for i in range(np.random.randint(1,11))]
         texteditor = self.text_edit
+        oldCursor = texteditor.textCursor()
+        #oldPos = oldCursor.position()
 
 
         # move the cursor to the end of the document
@@ -507,8 +529,13 @@ class MainWindow(QMainWindow):
 
         for char in randomletters:
             QTest.keyClick(self.text_edit, char)
-            QTest.qWait(10)  # Wait for a short duration between each character
+            QTest.qWait(2)  # Wait for a short duration between each character
             self.text_edit.updated("WriteWord")
+
+        #print(f'old pos {oldCursor.position()} new pos {cursor.position()}')
+        
+
+        texteditor.setTextCursor(oldCursor)
 
 
     def toggle_bold(self, boolgras):
@@ -600,6 +627,8 @@ def useAct(action,app,window):
 
             # Get names
             replaceable = vectorizer.get_feature_names_out()
+            
+            
 
             # the word to replace
             toreplace = np.random.choice(replaceable)
@@ -697,11 +726,11 @@ def play(texteditor,window,commands,start_funtion=lambda: print(None), reset_fun
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    window = MainWindow(onWrite = False)
+    window = MainWindow(onWrite = True)
     window.show()
-    R = Recommender("./models/bowModelGood",window.text_edit,hardCoded = True)
-    window.text_edit.logger.assistant = R
-    R.show()
+    #R = Recommender("./models/bowModelGood",window.text_edit,hardCoded = True)
+    #window.text_edit.logger.assistant = R
+    #R.show()
     #actions = ["SelectWR","SelectWL","SelectShiftR","SelectShiftL","MoveWR","MoveWL","MoveHome","MoveEnd","Tab","SelectAll"]
     #actionsSel = ["SelectWR","SelectWL","SelectAll"]
     #actionsMove = ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab"]
@@ -709,10 +738,10 @@ if __name__ == "__main__":
     actionsWord = ["WordDel","Replace","CopyPaste","WriteWord"]
     #play(window.text_edit,window,actionsSel,actionsMove,actionsWord,reset_function=reset)
     #playNonRand(window.text_edit,window,actionsSel,actionsMove,actionsWord,reset_function=reset)
-    #play(window.text_edit,window,actionsWord)
+    play(window.text_edit,window,actionsWord)
 
     app.exec()
 
-    #window.text_edit.logger.file2.close()
-    #window.text_edit.logger.file.close()
+    window.text_edit.logger.file2.close()
+    window.text_edit.logger.file.close()
     
