@@ -149,7 +149,7 @@ class Canvas(QWidget):
     def mouseReleaseEvent(self, event):
         # La figure est dessinee, on l'ajoute dans la liste d'objets
         if self.mode == 'draw':
-            pass
+            self.updated('draw')
         elif self.mode == 'resize':
             self.corner_resize = None
             self.setter = None

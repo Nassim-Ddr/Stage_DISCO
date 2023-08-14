@@ -12,7 +12,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from Canvas import *
 from Recommender import *
-import resources
+import icons.resources
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent = None ):
@@ -462,7 +462,5 @@ if __name__=="__main__":
     # Recommender
     R = Recommender("models/model0")
     window.canvas.logger.recommender = R
-
+    
     app.exec_()
-    if window.canvas.logger.file is not None:
-        window.canvas.logger.file.close()

@@ -94,7 +94,8 @@ class HardCodedModel():
 
     ############## Predict ######################  
     def predict(self, a, b, eps = 20):
-        L = [self.predictForeorBackground, self.predictCopyAlign, self.predictAlign, self.predictCopyDrag]
+        print("Predict ongoing")
+        L = [self.predictForeorBackground, self.predictCopyAlign, self.predictCopyDrag, self.predictAlign]
         for f in L:
             pred = f(a,b, eps)
             if pred is not None: return pred
@@ -102,10 +103,14 @@ class HardCodedModel():
         
     def predictAlign(self, a, b, eps = 20):
         # Meme nombre d'objets, donc possiblement un déplacement d'objet
+        index1, index2, r = self.noChange(a, b, self.pos, eps=20)
         a, b = [self.pos(o) for o in a],  [self.pos(o) for o in b]
-        if len(a) == len(b) and len(b)>1:
+        if len(a) == len(b) and len(b)>1 and not r:
             L = None
             A, B = np.array(a), np.array(b)
+            # Tri
+            A = A[index1]
+            B = B[index2] 
             D = np.zeros(4)
             index = np.where(np.abs(A-B).sum(1) != 0)[0] # on cherche l'objet qui s'est déplacé
             for o in B[index]:
@@ -121,7 +126,6 @@ class HardCodedModel():
         # Meme nombre d'objets, donc possiblement un déplacement d'objet 
         if len(a) == len(b) and len(b)>1:
             A, B = np.array([self.pos(o) for o in a]), np.array([self.pos(o) for o in b])
-            D = np.zeros(4)
             index = np.where(np.abs(A-B).sum(1) != 0)[0] # on cherche l'objet qui s'est déplacé
             index = index[0] if len(index)>0 else None
             if index == None: return 
@@ -129,36 +133,66 @@ class HardCodedModel():
             D = np.any(np.where(np.abs(B - o) <= eps, 1, 0), axis=1)
             D[index] = False
             for i in np.where(D)[0]:
-                if self.compareApprox(b[index], b[i], eps): return "Align Copy Yes"
+                if self.compareApprox(b[index], b[i], eps): 
+                    return "Align Copy"
+        elif len(b) == (len(a) + 1):
+            B = np.array([self.pos(o) for o in b])
+            o = B[-1]
+            D = np.any(np.where(np.abs(B - o) <= eps, 1, 0), axis=1)
+            D[-1] = False
+            for i in np.where(D)[0]:
+                if self.compareApprox(b[-1], b[i], eps): 
+                    return "Align Copy"
         return 
     
     def predictCopyDrag(self, a, b, eps = 20):
-        # Objets non groupés
-        B = np.abs([self.state(o) for o in b if not isinstance(o,QRectGroup)])
-        for o in B:
-            # on check si y a pas un objet semblable à "o" parmi b
-            d = np.all(np.abs(B - o) <= eps, axis=1).sum() 
-            if d > 1: return "Copy + Drag"
-        # Objets groupés
-        b = [o for o in b if isinstance(o,QRectGroup)]
-        B = [(o.height(), o.width())  for o in b]
-        if len(B) > 1:
-            for index,o in enumerate(np.abs(B[:-1])):
+        if len(a) == len(b):
+            # Objets non groupés
+            B = np.abs([self.stateGroup(o) for o in b if not isinstance(o,QRectGroup)])
+            A = np.abs([self.stateGroup(o) for o in a if not isinstance(o,QRectGroup)])
+            # # Tri
+            # index1, index2 = self.argsort(A, B)
+            # A = np.array(A)[index1]
+            # B = np.array(B)[index2]
+            index = np.where(np.abs(A-B).sum(1) != 0)[0] # on cherche l'objet qui s'est déplacé
+            index = index[0] if len(index)>0 else None
+            print(f'{ index = }')
+            if index is not None:
+                B = np.abs([self.state(o) for o in b if not isinstance(o,QRectGroup)])
+                o = B[index]
+                # on check si y a pas un objet semblable à "o" parmi b
+                d = np.all(np.abs(B - o) <= eps, axis=1).sum()
+                if d > 1: return "Copy + Drag"
+            # Objets groupés
+            b = [o for o in b if isinstance(o,QRectGroup)]
+            B = [(o.height(), o.width())  for o in b]
+            if len(B) > 1:
+                for index,o in enumerate(np.abs(B[:-1])):
+                    Lindex = np.all(np.abs(B - o) <= eps, axis=1)
+                    Lindex[index] = False
+                    for i in np.where(Lindex)[0]: 
+                        if self.compareGroup(b[index], b[i], eps): return "Copy Group Drag"
+        elif len(b) == len(a) + 1:
+            if isinstance(b[-1], QRectGroup):
+                index = -1
+                b = [o for o in b if isinstance(o,QRectGroup)]
+                B = [(o.height(), o.width())  for o in b]
                 Lindex = np.all(np.abs(B - o) <= eps, axis=1)
                 Lindex[index] = False
                 for i in np.where(Lindex)[0]: 
-                    if self.compareGroup(b[index], b[i], eps): return "Copy Group Align"
+                    if self.compareGroup(b[index], b[i], eps): return "Copy Group Drag"
+            else:
+                B = np.abs([self.state(o) for o in b if not isinstance(o,QRectGroup)])
+                o = B[-1]
+                # on check si y a pas un objet semblable à "o" parmi b
+                d = np.all(np.abs(B - o) <= eps, axis=1).sum() 
+                print("D: ", d)
+                if d > 1: return "Copy + Drag"
         return 
-    
+
     def predictForeorBackground(self, s1, s2, eps = 20):
         # True pas changement de taille, pas de changement de couleur
-        def noChange(s1,s2, eps = 10):
-            if len(s1) != len(s2) or len(s1)==0 or len(s2)==0: return None,None,False
-            L1 = np.abs([self.state(o) for o in s1])
-            L2 = np.abs([self.state(o) for o in s2])
-            index1, index2 = self.argsort(L1, L2)
-            return index1, index2, np.all((L1[index1] - L2[index2]) <= eps)
-        index1, index2, r = noChange(s1,s2)
+        index1, index2, r = self.noChange(s1,s2, self.stateGroup)
         if r:
             # relation 1 vs 1
             def f(o1, o2, i,j):
@@ -199,7 +233,7 @@ class HardCodedModel():
                 o.color.red(), o.color.green(), o.color.blue(), 
                 o.border_color.red(), o.border_color.green(), o.border_color.blue())
     
-    def stateGroup(self, o, ref):
+    def stateGroup(self, o, ref = (0,0)):
         name = o.__class__.__name__
         if name not in self.D: self.D[name] = len(self.D)
         top, left = ref
@@ -221,7 +255,7 @@ class HardCodedModel():
         if isinstance(o1, QRectGroup): return self.compareGroup(o1, o2, eps)
         o1 = np.array(self.state(o1))
         o2 = np.array(self.state(o2))
-        return np.all(np.abs(o1 - o2) <= eps)
+        return np.all(np.abs(o1 - o2) <= 10)
 
     def compareGroup(self, o1, o2, D = None, eps=20):
         if len(o2.objects) != len(o1.objects): return False
@@ -236,7 +270,12 @@ class HardCodedModel():
         L2 = np.array(L2)[index2]
         return np.all((L1 - L2) <= eps)
 
-    
+    def noChange(self, s1,s2, state_function, eps = 10):
+        if len(s1) != len(s2) or len(s1)==0 or len(s2)==0: return None,None,False
+        L1 = np.abs([state_function(o) for o in s1])
+        L2 = np.abs([state_function(o) for o in s2])
+        index1, index2 = self.argsort(L1, L2)
+        return index1, index2, np.all((L1[index1] - L2[index2]) <= eps)
 
             
 

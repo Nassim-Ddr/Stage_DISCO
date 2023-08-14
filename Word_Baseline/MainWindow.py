@@ -13,7 +13,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
 from Recommender import *
 import random 
-import spacy
 import copy
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
@@ -158,7 +157,11 @@ class CustomTextEdit(QTextEdit):
             # On prend en compte les touches simples
             elif keyValue.isalpha() or keyValue.isdigit() or keyValue.isprintable() or event.key() == Qt.Key_Backspace :
                 # ignorer ce cas 
-                if modifiers == Qt.ControlModifier :
+                l = [16777238,16777235,16777227,16777237,16777239,16777222, 16777301, 16777239, 16777238, 16777264, 16777265, 16777266, 16777267, 16777330,16777328,16777329, 16777268,16777269,16777270,16777271,16777272,16777272,16777273,16777274,16777275, 16777249, 16777248,16777251, 16777250]
+
+                print(event.key())
+                if  event.key() in l:
+                    print("ça marche")
                     return 
                 self.handle_Letter()
                 return
@@ -309,6 +312,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Word Like app")
 
         self.text_edit = CustomTextEdit(self,onWrite = onWrite)
+        self.text_edit.setMaximumWidth(750)
 
         #self.showMaximized()
         self.setMinimumSize(800,800)
@@ -322,12 +326,15 @@ class MainWindow(QMainWindow):
 
         # Définit le widget central de la fenêtre.
         central_widget = QWidget(self)
+        
         layout = QHBoxLayout(central_widget)
         layout.addWidget(self.text_edit)
 
+
+
         self.word_frequency_widget = WordFrequencyWidget(self)
         layout.addWidget(self.text_edit)
-        layout.addWidget(self.word_frequency_widget)
+        # layout.addWidget(self.word_frequency_widget)
         self.setCentralWidget(central_widget)
         layout.setContentsMargins(100,11,100,0)
 
