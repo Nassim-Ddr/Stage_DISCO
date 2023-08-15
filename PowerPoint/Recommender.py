@@ -56,6 +56,7 @@ class Recommender(QMainWindow):
         #self.model = Model(model, ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
         self.model = HardCodedModel()
         self.memory = []
+        self.count = 1
         self.max_size_memory = max_size_memory
 
         self.initUI()
@@ -97,7 +98,8 @@ class Recommender(QMainWindow):
             #pred_command, confiance = preds_conf[index]
             pred_command, confiance = self.model.predict(self.memory[-1], autre), "Tellement confiant"
             if pred_command != 'Rien du Tout': 
-                self.setText(f'Predicted Command: {pred_command}\nConfiance: {confiance}')
+                self.setText(f'n° {self.count}\nPredicted Command: {pred_command}\nConfiance: {confiance}')
+                self.count += 1
                 #self.showState(self.memory[index], state)
                 self.mode = 1
                 self.timer.start()

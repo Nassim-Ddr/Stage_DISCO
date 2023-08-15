@@ -462,7 +462,5 @@ if __name__=="__main__":
     # Recommender
     R = Recommender("models/model0")
     window.canvas.logger.recommender = R
-
+    
     app.exec_()
-    if window.canvas.logger.file is not None:
-        window.canvas.logger.file.close()
