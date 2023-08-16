@@ -116,11 +116,12 @@ class Recommender(QMainWindow):
                     break
                 
                 # on affiche la commande predite avec la confiance
-                self.setText(f'Predicted Command: {pred_command}') # La confiance du besoin de cette recommandation est : {confiance}')
+                self.setText(f'Predicted Command: {pred_command}\n') #La confiance du besoin de cette recommandation est : {confiance}')
 
                 self.memory.clear()
                 self.memory2.clear()
                 self.texmem.clear()
+                #print(f'Cleared ? {len(self.memory)} - {len(self.memory2.clear())} - {len(self.texmem)}')
 
                 self.texmem.append(texteditor.toPlainText())
                 self.memory.append(state)
@@ -139,7 +140,9 @@ class Recommender(QMainWindow):
             break
         # dans le cas ou aucune commande n'est trouvee avec le vecteur bow on essaye avec la selection
         if ok :
-            self.updateHardCoded(stateHardcode,command,texteditor)
+            wow = self.updateHardCoded(stateHardcode,command,texteditor)
+            if wow == False:
+                return
         # sinon on memorise juste l'etat en retirant si la memoire est trop grande
         else :
             self.memory2.append(stateHardcode)
@@ -149,6 +152,7 @@ class Recommender(QMainWindow):
         # supprime si la liste est trop grande
         self.texmem.append(texteditor.toPlainText())
         self.memory.append(state)
+        #print("Henlo world")
         if m_size >= self.max_size_memory: 
             self.memory.pop(0)
             self.texmem.pop(0)
@@ -157,9 +161,11 @@ class Recommender(QMainWindow):
     
     def updateHardCoded(self, state,command,texteditor):
         # state, label = state
-        m_size = len(self.memory2)
+        m_size2 = len(self.memory2)
         keepinmind = texteditor.toPlainText()
-        for i in range(m_size): 
+        print(len(self.texmem),"-",len(self.memory2))
+        for i in range(m_size2): 
+            
             if self.texmem[i] != keepinmind:
                 continue
 
@@ -167,8 +173,10 @@ class Recommender(QMainWindow):
 
             if np.sum(s-state) == 0:
                 self.memory2 = self.memory2[:i]
-                return
-            if i == m_size-1:
+                self.memory = self.memory[:i]
+                self.texmem = self.texmem[:i]
+                return False
+            if i == m_size2-1:
                 break
             # cree la donnee a predire
 
@@ -180,8 +188,7 @@ class Recommender(QMainWindow):
 
             # Si la commande trouvee est deja utilisee suffisament on evite de recommander 
             if self.recommendThreshold[ind] >= self.stopRecom:
-                self.setText("")
-                break
+                pred_command = ""
 
             # On veut eviter de continuer a recommander trop
             if pred_command == command:
@@ -190,12 +197,16 @@ class Recommender(QMainWindow):
             
             self.setText(pred_command)
             self.memory2.clear()
+            self.memory.clear()
+            self.texmem.clear()
+            #print(f'Cleared hard ? {len(self.memory)} - {len(self.memory2)} - {len(self.texmem)}')
             self.timer.start()
             break
+        #print(f'Henlo clear {len(self.memory2)} and {len(self.texmem)}')
         # ajoute l'etat precedent
         # supprime si la liste est trop grande
         self.memory2.append(state)
-        if m_size >= self.max_size_memory: self.memory2.pop(0)
+        if m_size2 >= self.max_size_memory: self.memory2.pop(0)
 
     def setText(self, text):
         self.text.setText(text)
