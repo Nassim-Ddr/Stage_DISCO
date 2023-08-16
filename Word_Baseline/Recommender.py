@@ -116,7 +116,7 @@ class Recommender(QMainWindow):
                     break
                 
                 # on affiche la commande predite avec la confiance
-                self.setText(f'Predicted Command: {pred_command}\n La confiance du besoin de cette recommandation est : {confiance}')
+                self.setText(f'Predicted Command: {pred_command}') # La confiance du besoin de cette recommandation est : {confiance}')
 
                 self.memory.clear()
                 self.memory2.clear()
