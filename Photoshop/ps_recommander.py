@@ -13,7 +13,7 @@ from Recommender_UI import *
 from models.utils import *
 from models.models import *
 
-class Photoshop_Recommander() : 
+class Photoshop_Recommander(QMainWindow) : 
     def __init__(self, model, preprocess) :
         super().__init__()
         print("recommander_launched")
@@ -76,17 +76,16 @@ class Photoshop_Recommander() :
 
     def ask_normal_model(self, img1, img2) : 
         image_tensor = self.preprocess(Image.fromarray(np.hstack((img1, img2)))).unsqueeze(0)
-        Image._show(T.ToPILImage()(image_tensor[0]))
+        # Image._show(T.ToPILImage()(image_tensor[0]))
         with torch.no_grad() : 
             output = self.model(image_tensor)
         output = nnf.softmax(output, dim=1)
         confidence , predicted_class = torch.max(output, 1)
         
-        self.recomend_command(self.command_labels[predicted_class.item()], confidence)
+        self.recomend_command(self.command_labels[predicted_class.item()], confidence.item())
 
     def recomend_command(self, command, confidence) : 
-        print("recommend command : " + command)
-        print("confidence : ", confidence)
+        self.alert.update("recommend command : " + command + "\n" + "confidence : "+ str(confidence))
 
 if __name__ == '__main__' : 
 

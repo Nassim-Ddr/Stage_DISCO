@@ -161,7 +161,7 @@ class CustomTextEdit(QTextEdit):
 
                 print(event.key())
                 if  event.key() in l:
-                    print("ça marche")
+                    # print("ça marche")
                     return 
                 self.handle_Letter()
                 return
