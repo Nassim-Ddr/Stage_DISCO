@@ -36,6 +36,7 @@ class Canvas(QWidget):
 
         self.cursorPos = None
         self.pStart = None
+        self.command = None
         
         # Logger
         self.logger = Logger('data/data.csv')
@@ -65,6 +66,7 @@ class Canvas(QWidget):
             p = event.pos()/self.scale - self.painterTranslation
             f = self.selection.find(self.Lforms, p)
             modifiers = QApplication.keyboardModifiers()
+            # Séléction Multiple
             if modifiers == Qt.ShiftModifier:
                 if f is None: pass
                 elif self.selection.isEmpty(): self.selection.add_element(f)
@@ -72,6 +74,7 @@ class Canvas(QWidget):
                     self.selection.add_element(f)
                 else:
                     self.selection.remove_element(f)
+            # Sélection: Copy + Align / Copy + Drag
             elif  modifiers == Qt.ControlModifier or  modifiers == (Qt.ControlModifier | Qt.ShiftModifier):
                 if f is None: pass
                 elif not self.selection.contains(f):
@@ -81,7 +84,9 @@ class Canvas(QWidget):
                     self.selection.element = f
                 self.copy_element(mode='align')
                 self.update()
-            else:    
+                if modifiers == (Qt.ControlModifier | Qt.ShiftModifier): self.command = "Copy + Align"
+                elif modifiers == Qt.ControlModifier: self.command = "Copy + Drag"
+            else:    # Sélection normale
                 if f is None: self.selection.clear()
                 elif self.selection.isEmpty(): self.selection.add_element(f)
                 elif not self.selection.contains(f):
@@ -138,6 +143,7 @@ class Canvas(QWidget):
                     V = self.cursorPos - self.pStart
                     for o in self.selection.selected: o.translate(V)
                     self.pStart = self.cursorPos
+                    self.command = "Move"
             self.update()
 
     def updated(self, command):
@@ -158,9 +164,12 @@ class Canvas(QWidget):
         elif self.mode == 'select':
             self.copyAlign = None
             self.selection.remove_element(self.selection.element)
-            self.updated('Move')
+            if self.command is not None:
+                self.updated(self.command)
+                self.command = None
         self.pStart = None
         self.cursorPos = None
+        self.command = None
         self.update()
 
         
@@ -298,6 +307,7 @@ class Canvas(QWidget):
             self.Lforms.remove(o)
         self.selection.clear()
         self.update()
+        self.updated("Delete")
 
     # Retourne la chaine de caractere d'un element de l'objet
     def elementToString(self, elt):     
@@ -349,25 +359,25 @@ class Canvas(QWidget):
         if not self.selection.isEmpty():
             self.alignTool.alignLeft(self.selection.selected)
             self.update()
-            self.updated('alignLeft')
+            self.updated('AlignLeft')
 
     def alignRight(self):
         if not self.selection.isEmpty():
             self.alignTool.alignRight(self.selection.selected)
             self.update()
-            self.updated('alignRight')
+            self.updated('AlignRight')
     
     def alignTop(self):
         if not self.selection.isEmpty():
             self.alignTool.alignTop(self.selection.selected)
             self.update()
-            self.updated( 'alignTop')
+            self.updated('AlignTop')
 
     def alignBottom(self):
         if not self.selection.isEmpty():
             self.alignTool.alignBottom(self.selection.selected)
             self.update()
-            self.updated('alignBottom')
+            self.updated('AlignBottom')
     
     def randomize(self):
         # create object not inside another object
@@ -403,7 +413,7 @@ class Canvas(QWidget):
                 self.Lforms.remove(form)
                 self.Lforms.append(form)
             self.update()
-            self.updated("Put in Foreground")
+            self.updated("Premier Plan")
 
     def deplaceFirst(self):
         if not self.selection.isEmpty():
@@ -411,7 +421,7 @@ class Canvas(QWidget):
                 self.Lforms.remove(form)
                 self.Lforms.insert(0, form)
             self.update()
-            self.updated("Put in Background")
+            self.updated("Arriere Plan")
 
         
         
