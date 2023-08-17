@@ -89,7 +89,8 @@ class Recommender(QMainWindow):
         # painter.drawRect(self.rect())
         pass
 
-    def update(self, state, autre=None):
+    def update(self, state, autre=None, command = None):
+        print(" =========== Predicting ? =============")
         state = self.QImageToCvMat(state)
         m_size = len(self.memory)
         if m_size > 0:
@@ -98,11 +99,13 @@ class Recommender(QMainWindow):
             #pred_command, confiance = preds_conf[index]
             pred_command, confiance = self.model.predict(self.memory[-1], autre), "Tellement confiant"
             if pred_command != 'Rien du Tout': 
-                self.setText(f'n° {self.count}\nPredicted Command: {pred_command}\nConfiance: {confiance}')
-                self.count += 1
-                #self.showState(self.memory[index], state)
-                self.mode = 1
-                self.timer.start()
+                if command == pred_command: print(f"Filtered command: {pred_command}")
+                else:
+                    self.setText(f'n° {self.count}\nPredicted Command: {pred_command}\nConfiance: {confiance}')
+                    self.count += 1
+                    #self.showState(self.memory[index], state)
+                    self.mode = 1
+                    self.timer.start()
             
         # ajoute l'etat precedent
         # supprime si la liste est trop grande

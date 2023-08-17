@@ -108,24 +108,48 @@ Machine Learning: réseaux de convolution (CNN) :
 On s'est inspiré de LeNet pour créer ce modèle  
 (#### **Image LeNet ou je sais** ####)
 
-#### Apprentissage
-...
-
 ### Hardcode
-- ...
+- Input: liste des objets avec leurs propriétés: ( avant et après )
+   - type de objets
+   - position du rectangle englobant
+   - couleurs de remplissage RGB
+   - couleur du contour RGB
 
+
+(### On prend seulement le premier objet du résultat)
+- Prédiction alignement:
+   1. obtenir les objets qui ont changés, en comparant avec les objets d'avant.
+   2. L'objet qui a changé, __o__ regarde si il y a alignement possible (paramètre __eps__) avec un autre objets présents dans la liste
+
+- Prédiction Copy-Align:
+   1. Obtenir l'objet qu'on focus:
+      - Si la taille avant et après est la même, on compare avec les objets d'avant. On devrait pouvoir obtenir seulement l'objet qui a changé
+      - Si la taille de la liste a seulement augmenter de 1, on récupère l'objet récemment crée sur le slide
+   
+   2. L'objet qu'on a choisit de focus, __o__, on regarde si il y a objet similaire (paramètre __eps__) présents dans la liste et qui est alignés avec un autre objet
+
+- Prédiction Foreground-Background
+   1. Si déplacement des objets ou changement dans les propritétés (couleurs, ...), alors retourne Faux
+   2. calculer la matrice des relations avant et après. Matrice des relations: Soit f(i,j) = 
+      - 1 si o_i devant o_j
+      - -1 si o_i derrière o_j
+      - 0 si o_i = o_j ou o_i et o_j ne s'intersecte pas ( = pas de relation)
+   3. Prendre que les objets qui ont changé de relations
+   4. Prendre celui avec le plus de changement
+ 
 ## Evalutation modèle
 ### ML
 - accuracy, ...
 - temps de  prédiction
 
 ### Hardcode
-- 
+- Points où ça marche
+- Points où ça marche pas
 
 # Recommender
 - temps de réponse
-- comment ça fonctionne ?
-- 
+## comment ça fonctionne ?
+
 
 
 # Conclusion

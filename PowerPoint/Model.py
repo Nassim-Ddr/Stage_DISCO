@@ -93,8 +93,12 @@ class HardCodedModel():
     D = dict()
 
     ############## Predict ######################  
+    # Return 
+    # "Align Copy" 
+    # "Copy + Drag"
+    # "Premier Plan", "Arriere Plan"
+    # "AlignLeft", "AlignTop", "AlignRight", "AlignBottom"
     def predict(self, a, b, eps = 20):
-        print("Predict ongoing")
         L = [self.predictForeorBackground, self.predictCopyAlign, self.predictCopyDrag, self.predictAlign]
         for f in L:
             pred = f(a,b, eps)
@@ -134,7 +138,7 @@ class HardCodedModel():
             D[index] = False
             for i in np.where(D)[0]:
                 if self.compareApprox(b[index], b[i], eps): 
-                    return "Align Copy"
+                    return "Copy + Align"
         elif len(b) == (len(a) + 1):
             B = np.array([self.pos(o) for o in b])
             o = B[-1]
@@ -142,7 +146,7 @@ class HardCodedModel():
             D[-1] = False
             for i in np.where(D)[0]:
                 if self.compareApprox(b[-1], b[i], eps): 
-                    return "Align Copy"
+                    return "Copy + Align"
         return 
     
     def predictCopyDrag(self, a, b, eps = 20):
@@ -156,7 +160,6 @@ class HardCodedModel():
             # B = np.array(B)[index2]
             index = np.where(np.abs(A-B).sum(1) != 0)[0] # on cherche l'objet qui s'est déplacé
             index = index[0] if len(index)>0 else None
-            print(f'{ index = }')
             if index is not None:
                 B = np.abs([self.state(o) for o in b if not isinstance(o,QRectGroup)])
                 o = B[index]
@@ -186,7 +189,6 @@ class HardCodedModel():
                 o = B[-1]
                 # on check si y a pas un objet semblable à "o" parmi b
                 d = np.all(np.abs(B - o) <= eps, axis=1).sum() 
-                print("D: ", d)
                 if d > 1: return "Copy + Drag"
         return 
 
