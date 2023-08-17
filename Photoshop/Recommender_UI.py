@@ -24,7 +24,7 @@ class Recommender_UI(QMainWindow):
     def __init__(self, parent = None, show_state = False):
         QMainWindow.__init__(self, parent )
         # Interface du recommender
-        self.setWindowTitle("Assistant qui bourre le pantalon")
+        self.setWindowTitle("Assistant")
         b = True
         if b:
             self.setWindowFlags(Qt.FramelessWindowHint)
