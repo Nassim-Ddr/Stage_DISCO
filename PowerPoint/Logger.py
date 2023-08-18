@@ -10,7 +10,7 @@ from PyQt5.QtCore import *
 import os
 
 class Logger():
-    def __init__(self, write = False, recommender = None):
+    def __init__(self, write = False, recommender = None, directory = None):
         # Variable pour l'ecriture du fichier
         self.write = write
 
@@ -18,14 +18,16 @@ class Logger():
         self.prevState = None
         self.cpt = 0 
         self.recommender = recommender
+        self.directory = directory
         
     def update(self, state, command, autre=None):
         if self.recommender is not None:
             self.recommender.update(state, autre, command)
             return
         if self.write:
-            image = self.getImage(state)
-            image.save(f'./data/{command}/{self.cpt}.jpg')
+            #image = self.getImage(state)
+            image = state
+            image.save(f'{self.directory}/{command}/{self.cpt}.jpg')
             self.cpt+= 1
         self.prevState = state
         
@@ -35,7 +37,7 @@ class Logger():
         image2 = image
         size = image1.size() + image2.size()
 
-        res = QImage(size.width(), size.height(), QImage.Format_ARGB32_Premultiplied)
+        res = QImage(size.width(), image1.height(), QImage.Format_ARGB32_Premultiplied)
         painter = QPainter(res)
         painter.drawImage(0,0, image1)
         painter.drawImage(image1.width(),0, image2)
@@ -46,14 +48,12 @@ class Player():
     # parameters:
     # nb of initial state
     # nb of actions per initial state
-    def start(self, actions, start_funtion=lambda: print(None), reset_function=lambda: print(None), call_function=lambda: print(None), parameters=(1000, 1)):
-        directory = 'data'
+    def start(self, actions, start_funtion=lambda: print(None), reset_function=lambda: print(None), call_function=lambda: print(None), parameters=(1000, 1), directory = '../../data1'): 
         if not os.path.exists(directory):
             os.makedirs(directory)
         for a in actions:
-            if not os.path.exists(f'data/{a.__name__}'):
-                os.makedirs(f'data/{a.__name__}')
-
+            if not os.path.exists(f'{directory}/{a.__name__}'):
+                os.makedirs(f'{directory}/{a.__name__}')
 
         iter_max, nb_act = parameters 
         i = 0
@@ -78,11 +78,19 @@ if __name__ == '__main__':
         canvas.alignTop
     ]
     def call_function():
-        n = np.random.randint(2,len(canvas.Lforms)+1)
-        canvas.selection.selected = np.random.choice(canvas.Lforms, size = n, replace=False)
+        mode = "all"
+        if mode == 'selection':
+            n = np.random.randint(2,len(canvas.Lforms)+1)
+            canvas.selection.selected = np.random.choice(canvas.Lforms, size = n, replace=False)
+        else:
+            canvas.selection.selected = canvas.Lforms
+
+
+    directory = '../../../data_one_state'
     canvas.logger.write = True
+    canvas.logger.directory = directory
     player = Player()
-    player.start(actions, canvas.randomize, canvas.reset, call_function, parameters=(10,1))
+    player.start(actions, canvas.randomize, canvas.reset, call_function, parameters=(4000,1), directory=directory)
         
 
 

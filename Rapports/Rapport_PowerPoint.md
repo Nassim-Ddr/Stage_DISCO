@@ -142,6 +142,14 @@ On s'est inspiré de LeNet pour créer ce modèle
 - accuracy, ...
 - temps de  prédiction
 
+Model Alignement avec état courant seulement
+Test performance: 0.729
+========= Precision ==============
+alignBottom : 0.747
+alignLeft : 0.705
+alignRight : 0.870
+alignTop : 0.659
+
 ### Hardcode
 - Points où ça marche
 - Points où ça marche pas
@@ -149,8 +157,6 @@ On s'est inspiré de LeNet pour créer ce modèle
 # Recommender
 - temps de réponse
 ## comment ça fonctionne ?
-
-
 
 # Conclusion
 - ouverture, points à améliorer, ce qu'on peut faire

@@ -459,8 +459,13 @@ if __name__=="__main__":
     window = p.window
     p.show()
 
+    # Model
+    filename = "models/model0"
+    model = LeNet()
+    model.load_state_dict(torch.load(filename)) # loading parameters
+
     # Recommender
-    R = Recommender("models/model0")
+    R = Recommender(model, model.transform)
     window.canvas.logger.recommender = R
     
     app.exec_()

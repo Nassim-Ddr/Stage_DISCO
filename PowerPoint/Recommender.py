@@ -53,8 +53,8 @@ class Recommender(QMainWindow):
             self.ax3.axis('off')
 
         # variable du recommender
-        #self.model = Model(model, ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
-        self.model = HardCodedModel()
+        self.model = Model(model, ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
+        #self.model = HardCodedModel()
         self.memory = []
         self.count = 1
         self.max_size_memory = max_size_memory
