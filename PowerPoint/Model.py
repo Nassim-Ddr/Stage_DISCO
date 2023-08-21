@@ -13,24 +13,28 @@ from CanvasTools import *
 ## classe_names: class_label mapping
 ## process: pre-processing before going into the model
 class Model():
-    def __init__(self, model, transform_function, classe_names = None):
+    def __init__(self, model, transform_function, classe_names = None, tak2Image2Image = True):
         self.model = model
-        self.image_transform = transform_function
+        self.transform_function = transform_function
         self.classe_names = classe_names
-        self.process = Preprocessing()
+        self.tak2Image2Image = tak2Image2Image
+        #self.process = Preprocessing()
 
     
     # a, b (np.array): precedent state, current state
     # return (prediction, probability of estimate)
     def predict(self, a, b):
         # Pre-processing
-        b = self.process.getOnlyMovingObject(a,b)
-        s = Image.fromarray(b)
-        x = self.image_transform(s).reshape((1,3,64,64))
-        output = self.model(x) # prediction
+        #b = self.process.getOnlyMovingObject(a,b)
+        output = self.model(self.input(a,b)) # prediction
         index = output.argmax(1) # index with highest probability
         if self.classe_names is not None: index = self.classe_names[index] # change to class label
         return index, round(output.softmax(dim=1).max().item(),3)
+    
+    def input(self, a, b):
+        s = np.concatenate((a,b), 1) if self.tak2Image2Image else b
+        s = Image.fromarray(s)
+        return self.transform_function(s).unsqueeze(0)
 
 # Pytorch model
 class LeNet(nn.Module):
@@ -69,10 +73,16 @@ class LeNet2(nn.Module):
         self.fc2 = nn.Linear(1024, 256)
         self.fc3 = nn.Linear(256, 4)
 
-        self.process = transforms.Compose([
+        self.process_2image = transforms.Compose([
             transforms.ToTensor(),
             crop_normal(),
             transforms.Resize((64, 128)),
+        ])
+
+        self.process_1image = transforms.Compose([
+            transforms.ToTensor(),
+            crop(),
+            transforms.Resize((64, 64)),
         ])
 
     def forward(self, x):
@@ -205,6 +215,9 @@ class HardCodedModel():
     
     def predictCopyDrag(self, a, b, eps = 20):
         if len(a) == len(b):
+            B = np.abs([self.state(o) for o in b if not isinstance(o,QRectGroup)])
+            A = np.abs([self.state(o) for o in a if not isinstance(o,QRectGroup)])
+            if np.abs(B-A).sum() < 1: return
             # Objets non groupés
             B = np.abs([self.stateGroup(o) for o in b if not isinstance(o,QRectGroup)])
             A = np.abs([self.stateGroup(o) for o in a if not isinstance(o,QRectGroup)])
