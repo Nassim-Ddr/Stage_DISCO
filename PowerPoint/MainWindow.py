@@ -456,30 +456,30 @@ if __name__=="__main__":
     window = p.window
     p.show()
 
-    # Model
-    classif = LeNet2()
-    tak2Image2Image=True
-    process = classif.process_2image
-    if not tak2Image2Image:
-        classif.fc1 = nn.Linear(1024,1024)
-        process = classif.process_1image
-    classif.load_state_dict(torch.load("models/model_2image_all")) # loading parameters
-    model = Model(classif, process, tak2Image2Image=tak2Image2Image, classe_names = ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
+    # # Model
+    # classif = LeNet2()
+    # tak2Image2Image=True
+    # process = classif.process_2image
+    # if not tak2Image2Image:
+    #     classif.fc1 = nn.Linear(1024,1024)
+    #     process = classif.process_1image
+    # classif.load_state_dict(torch.load("models/model_2image_all")) # loading parameters
+    # model = Model(classif, process, tak2Image2Image=tak2Image2Image, classe_names = ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
 
-    classif = LeNet2()
-    tak2Image2Image=True
-    process = classif.process_2image
-    if not tak2Image2Image:
-        classif.fc1 = nn.Linear(1024,1024)
-        process = classif.process_1image
-    classif.load_state_dict(torch.load("models/model_2image_partial")) # loading parameters
-    model2 = Model(classif, process, tak2Image2Image=tak2Image2Image, classe_names = ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
+    # classif = LeNet2()
+    # tak2Image2Image=True
+    # process = classif.process_2image
+    # if not tak2Image2Image:
+    #     classif.fc1 = nn.Linear(1024,1024)
+    #     process = classif.process_1image
+    # classif.load_state_dict(torch.load("models/model_2image_partial")) # loading parameters
+    # model2 = Model(classif, process, tak2Image2Image=tak2Image2Image, classe_names = ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
 
-    model3 = HardCodedModel()
-    # model = HardCodedModel()
+    # model3 = HardCodedModel()
+    model = HardCodedModel()
     # Recommender
-    LR = [Recommender(m, show_state=False, moving=False, title=t) for m,t in zip([model, model2, model3],["all", "partial", "hardcode"])]
-    # R = Recommender(model, show_state=False, moving=False)
-    window.canvas.logger.recommender = LR
+    # LR = [Recommender(m, show_state=False, moving=False, title=t) for m,t in zip([model, model2, model3],["all", "partial", "hardcode"])]
+    R = Recommender(model, show_state=False, moving=False)
+    window.canvas.logger.recommender = R
     
     app.exec_()

@@ -21,26 +21,46 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from Model import *
 
 # Recommender: interface qui affiche les prédictions du modèle
+# model: qui fait les prédictions sur les états de l'application
+# max_size_memory: taille de l'historique des états
+# parent: parent du widget (optionnel)
+# show_state: affiche ou pas les états du résultat final
+# moving: déplace ou non le widget pour cacher et sort si on a fait une prédiction
 class Recommender(QMainWindow):
-    def __init__(self, model, max_size_memory = 5, parent = None, show_state = False, moving= True, title = ""):
+    def __init__(self, model, max_size_memory = 5, parent = None, show_state = False, moving= True, title = "Assistant PowerPoint"):
         QMainWindow.__init__(self, parent )
         # Interface du recommender
-        self.setWindowTitle("Assistant qui bourre le pantalon")
-        self.title = title
         b = True
         if b:
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
             self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setMinimumSize(QSize(250,150))
+        self.setMinimumSize(QSize(280,150))
         self.container = QWidget()
         layout = QVBoxLayout(self.container)
+        layout.setSpacing(0)
+        # Title bar
+        label = QLabel(title, self.container)
+        label.setStyleSheet(f"""
+            Background: #b8442c;
+            color:white;font:15px bold;
+            font-weight:bold;
+            height: 11px;""")
+        label.setFixedHeight(30)
+        label.setIndent(10)
+        layout.addWidget(label)
+        
         # Affichage de la recommandation
-        self.text = QLabel(self.container)
-        self.text.setText("HELLO WORLD")
-        self.text.setStyleSheet("margin-left: 10px; border-radius: 20px; background: silver; color: #4A0C46; font-size:15px")
-        self.text.setAlignment(Qt.AlignCenter)
-        self.text.setMinimumSize(QSize(200,100))
+        self.text = QLabel("HELLO WORLD", self.container)
+        self.text.setStyleSheet("""
+                                background: white; 
+                                color: #4A0C46; 
+                                font-size:16px;
+                                font-weight: 500;""")
+        self.text.setIndent(10)
+        self.text.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+        self.text.setWordWrap(True)
+        self.text.setTextFormat(Qt.RichText)
         layout.addWidget(self.text)
 
         self.showingState = show_state
@@ -101,7 +121,7 @@ class Recommender(QMainWindow):
                 if pred_command != 'Rien du Tout': 
                     if command == pred_command and False: print(f"Filtered command: {pred_command}")
                     else:
-                        self.setText(f'n° {self.count}\nPredicted Command: {pred_command}\nConfiance: {confiance}')
+                        self.setText(pred_command)
                         self.count += 1
                         if self.moving:
                             self.mode = 1
@@ -111,8 +131,8 @@ class Recommender(QMainWindow):
                 index = np.argmax(preds_conf[:,1])
                 index = -1
                 pred_command, confiance = preds_conf[index]
-                self.setText(f'n° {self.count}\nPredicted Command: {pred_command}\nConfiance: {confiance}')
-                self.count += 1
+                self.setText(pred_command, confiance)
+
                 if self.showingState: self.showState(self.memory[index], state)
                 if self.moving:
                     self.mode = 1
@@ -125,8 +145,14 @@ class Recommender(QMainWindow):
         else: self.memory.append(state)
         if m_size >= self.max_size_memory: self.memory.pop(0)
 
-    def setText(self, text):
-        self.text.setText(f'{self.title} {text}')
+    def setText(self, cmd, confiance = None):
+        self.count += 1
+        r =f'<span style="font-weight:600; color:#aa0000;">{cmd}</span>'
+        c =f'<span style="font-weight:600; color:#aa0000;">{confiance}</span>'
+        if confiance is None:
+            self.text.setText(f'Prediction n°{self.count}:\n{r}')
+        else:
+            self.text.setText(f'Prediction n°{self.count}: {r}\nConfiance: {c}')
 
     def QImageToCvMat(self, image):
         image.save(f'./images/state.jpg')
