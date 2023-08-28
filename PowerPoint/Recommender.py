@@ -27,7 +27,7 @@ from Model import *
 # show_state: affiche ou pas les états du résultat final
 # moving: déplace ou non le widget pour cacher et sort si on a fait une prédiction
 class Recommender(QMainWindow):
-    def __init__(self, model, max_size_memory = 5, parent = None, show_state = False, moving= True, title = "Assistant PowerPoint"):
+    def __init__(self, model, max_size_memory = 5, parent = None, show_state = False, moving= True, direction="right", title = "Assistant PowerPoint"):
         QMainWindow.__init__(self, parent )
         # Interface du recommender
         b = True
@@ -86,6 +86,7 @@ class Recommender(QMainWindow):
         self.setCentralWidget( self.container )
 
         # Timer
+        self.direction = direction
         self.moving = moving
         if self.moving:
             self.timer = QTimer(self)
@@ -102,14 +103,13 @@ class Recommender(QMainWindow):
     def topLeft(self):
         # no need to move the point of the geometry rect if you're going to use
         # the reference top left only
-        topLeftPoint = QApplication.desktop().availableGeometry().bottomLeft()
+        G = QApplication.desktop().availableGeometry()
+        topLeftPoint = G.bottomLeft()  if self.direction == 'left' else G.bottomRight() -QPoint(self.size().width(), 0)
+        self.move(topLeftPoint + QPoint(0,-self.size().height() - 10 - Recommender.diff))
         if self.moving:
-            self.move(topLeftPoint + QPoint(- self.size().width(),-self.size().height() - 10 - Recommender.diff))
             self.timer.start()
-        else:
-            self.move(topLeftPoint + QPoint(0,-self.size().height() - 10 - Recommender.diff))
         Recommender.diff += self.size().height() - 10
-        print(f'{self.diff = }')
+
 
     def update(self, state, autre=None, command = None):
         print(" =========== Predicting ? =============")
@@ -187,16 +187,28 @@ class Recommender(QMainWindow):
     # Normal move
     def initMove(self, waitTime = 2000):
         self.timer.setInterval(10)
-        self.move(self.pos() + QPoint(self.mode*5,0))
-        maxRight = QApplication.desktop().availableGeometry().left()
-        if self.mode == 1:
-            if self.pos().x() >= maxRight+10:
-                self.mode = -1
-                self.timer.setInterval(waitTime)
+        direction = 1 if self.direction=='left' else -1
+        self.move(self.pos() + QPoint(self.mode*5*direction,0))
+        if self.direction == 'left':
+            maxRight = QApplication.desktop().availableGeometry().left()
+            if self.mode == 1:
+                if self.pos().x() >= maxRight+10:
+                    self.mode = -1
+                    self.timer.setInterval(waitTime)
+            else:
+                if self.pos().x() <= maxRight - self.size().width():
+                    self.mode = 1
+                    self.timer.stop()
         else:
-            if self.pos().x() <= maxRight - self.size().width():
-                self.mode = 1
-                self.timer.stop()
+            maxRight = QApplication.desktop().availableGeometry().right()
+            if self.mode == 1:
+                if self.pos().x() <= maxRight-10:
+                    self.mode = -1
+                    self.timer.setInterval(waitTime)
+            else:
+                if self.pos().x() >= maxRight + self.size().width():
+                    self.mode = 1
+                    self.timer.stop()
 
 
 
