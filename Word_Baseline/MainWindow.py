@@ -14,6 +14,7 @@ import pandas as pd
 from Recommender import *
 import random 
 import copy
+import re
 
 #CustomTextEdit, on en a besoin pour recuperer les commandes par defaut
 class CustomTextEdit(QTextEdit):
@@ -289,7 +290,6 @@ class CustomTextEdit(QTextEdit):
         text = self.toPlainText()
         word_count = len(text.split())
         self.logger.update(command, (self.toPlainText(),word_count,charlen,cursor.position(),endPos,startSel,endSel),self)
-    
 
 
 class WordFrequencyWidget(QWidget):
@@ -434,6 +434,7 @@ class MainWindow(QMainWindow):
         # Demande à l'utilisateur d'entrer le texte à rechercher (QInputDialog)
         search_text, ok = QInputDialog.getText(self, "seach", "Enter text to search:")
         if ok:
+            #self.surligne(search_text)
             # Cherche la première occurrence du texte recherché dans le widget d'édition de texte
             cursor = self.text_edit.document().find(search_text)
             if not cursor.isNull():
@@ -444,13 +445,37 @@ class MainWindow(QMainWindow):
             else:
                 # Informe l'utilisateur que le texte n'a pas été trouvé
                 QMessageBox.information(self, "Search", "Text not found.")
+    
+
+    def occ_mots(self,mot):
+        word_to_count = mot  
+        txt = self.text_edit.toPlainText()
+        return len(re.findall(r'\b' + re.escape(word_to_count) + r'\b', txt, re.IGNORECASE))
+
+    
+    def surligne(self, search_text):
+        format = QTextCharFormat()
+        format.setBackground(QColor("orange"))
+
+        cursor = QTextCursor(self.text_edit.document())
+        while not cursor.isNull():
+            cursor = self.text_edit.document().find(search_text, cursor)
+
+            if not cursor.isNull():
+                cursor.mergeCharFormat(format)
+                cursor.clearSelection()
+    
 
     def replace(self):
         # Demande à l'utilisateur d'entrer le texte à remplacer (Toujours QInputDialog)
+        oldCursor = self.text_edit.textCursor()
         search_text, ok = QInputDialog.getText(self, "Replace", "Enter text to replace:")
         if ok:
-            # Demande à l'utilisateur d'entrer le texte de remplacement 
-            replace_text, ok = QInputDialog.getText(self, "Replace", "Enter replacement text:")
+            self.surligne(search_text)
+            nbelem = self.occ_mots(search_text)
+            message = f'Number of elements changed : {nbelem} \nEnter replacement text: '
+            replace_text, ok = QInputDialog.getText(self, "Replace", message)
+            
             if ok:
                 document = self.text_edit.document()
                 # Recherche la première occurrence du texte recherché dans le widget d'édition de texte
@@ -461,7 +486,18 @@ class MainWindow(QMainWindow):
                     cursor.insertText(replace_text)
                     # Recherche l'occurrence suivante du texte recherché
                     cursor = document.find(search_text, cursor)
+            else:
+                return
+        else :
+            return
+        self.text_edit.selectAll()
+        self.text_edit.setCurrentCharFormat(QTextCharFormat())
+        self.text_edit.textCursor().clearSelection()
+        self.text_edit.setTextCursor(oldCursor)
+
         self.text_edit.handle_replace()
+    
+    
     
     def replacePlayer(self,searchT,replaceT):
         # Demande à l'utilisateur d'entrer le texte à remplacer (Toujours QInputDialog)
