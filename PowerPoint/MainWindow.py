@@ -479,7 +479,7 @@ if __name__=="__main__":
     model = HardCodedModel()
     # Recommender
     # LR = [Recommender(m, show_state=False, moving=False, title=t) for m,t in zip([model, model2, model3],["all", "partial", "hardcode"])]
-    R = Recommender(model, show_state=False, moving=False)
+    R = Recommender(model, show_state=False, moving=True, direction='right')
     window.canvas.logger.recommender = R
     
     app.exec_()
