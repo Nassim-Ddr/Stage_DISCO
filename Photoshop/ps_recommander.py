@@ -17,14 +17,14 @@ class Photoshop_Recommander(QMainWindow) :
         super().__init__()
         print("recommander_launched")
         
-        # self.ps = Photoshop()
-        # self.doc = self.ps._ps.ActiveDocument
+        self.ps = Photoshop()
+        self.doc = self.ps._ps.ActiveDocument
 
         #This folder will be used to temporarly save screenshots
         self.tmp_folder = "C:\\Users\\Nassim\\Desktop\\Stage_DISCO\\Photoshop\\data\\portraits_tmp\\"
 
         #This will be used to store the last states of the app
-        self.dist_between_states = 5 # En secondes
+        self.dist_between_states = 15 # En secondes
         self.histo_len = 5
         self.histo_cpt = 1
         self.histo = [] 
@@ -51,6 +51,7 @@ class Photoshop_Recommander(QMainWindow) :
         self.timer = QTimer(self)
         self.timer.setInterval(self.dist_between_states*1000)
         self.timer.timeout.connect(self.observe)
+        self.timer.start()
 
     def observe(self) :
         try: 
@@ -58,12 +59,21 @@ class Photoshop_Recommander(QMainWindow) :
         except : 
             print("Warning : Can't save (App is busy)")
             # time.sleep(self.dist_between_states)
+            return 
+        
         self.histo.append(self.current_state)
         self.old_state = self.current_state
         self.current_state = imread(self.tmp_folder + "tmp_" + str(self.histo_cpt) + ".jpg")
         self.histo_cpt += 1
-        self.check_better_command()
         print(self.histo_cpt)
+
+        if ((self.old_state - self.current_state).sum() < 0.001 ) : 
+            print("Warning : No change detected")
+            return
+        
+        self.check_better_command()
+        
+        
 
     def check_better_command(self) : 
         # for old_state in self.histo[:-5] : 

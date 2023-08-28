@@ -27,7 +27,7 @@ class Recommender_UI(QMainWindow):
         self.setWindowTitle("Assistant")
         b = True
         if b:
-            self.setWindowFlags(Qt.FramelessWindowHint)
+            self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
             self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setMinimumSize(QSize(250,150))
