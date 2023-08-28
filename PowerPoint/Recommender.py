@@ -199,7 +199,7 @@ class Recommender(QMainWindow):
                     self.mode = 1
                     self.timer.stop()
         else:
-            maxRight = QApplication.desktop().availableGeometry().right()
+            maxRight = QApplication.desktop().availableGeometry().right() - self.size().width()
             if self.mode == 1:
                 if self.pos().x() <= maxRight-10:
                     self.mode = -1
