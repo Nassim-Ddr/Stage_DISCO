@@ -146,8 +146,8 @@ class Recommender(QMainWindow):
 
     def setText(self, cmd, confiance = None):
         self.count += 1
-        r =f'<span style="font-weight:600; color:#aa0000;">{cmd}</span>'
-        c =f'<span style="font-weight:600; color:#aa0000;">{confiance}</span>'
+        r =f'<div style="font-weight:600; color:#aa0000;">{cmd}</div>'
+        c =f'<div style="font-weight:600; color:#aa0000;">{confiance}</div>'
         if confiance is None:
             self.text.setText(f'Prediction n°{self.count}:\n{r}')
         else:

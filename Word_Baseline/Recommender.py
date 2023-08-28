@@ -11,10 +11,9 @@ from HardCodedModel import HardCodedModel
 from sklearn.preprocessing import normalize
 
 class Recommender(QMainWindow):
-    def __init__(self, model,texteditor, max_size_memory = 10, hardCoded = False):
+    def __init__(self, model,texteditor, max_size_memory = 10,show_state=False, hardCoded = False,direction="right",title = "Assistant Editeur de texte"):
         super().__init__()
         # Interface du recommender
-        self.setWindowTitle("Assistant qui bourre le pantalon")
         
         b = True
         if b:
@@ -24,13 +23,46 @@ class Recommender(QMainWindow):
         self.setMinimumSize(QSize(300,300))
         self.container = QWidget()
         layout = QVBoxLayout(self.container)
+        layout.setSpacing(0)
+        # Title bar
+        label = QLabel(title, self.container)
+        label.setStyleSheet(f"""
+            Background: #2B579A;
+            color:white;font:15px bold;
+            font-weight:bold;
+            height: 11px;""")
+        label.setFixedHeight(30)
+        label.setIndent(10)
+        layout.addWidget(label)
         # Affichage de la recommandation
-        self.text = QLabel(self.container)
-        self.text.setText("HELLO WORLD")
-        self.text.setStyleSheet("margin-left: 10px; border-radius: 20px; background: white; color: #4A0C46; font-size:15px")
-        self.text.setAlignment(Qt.AlignCenter)
-        self.text.setMinimumSize(QSize(200,100))
+         # Affichage de la recommandation
+        self.text = QLabel("HELLO WORLD", self.container)
+        self.text.setStyleSheet("""
+                                background: white; 
+                                color: #4A0C46; 
+                                font-size:16px;
+                                font-weight: 500;""")
+        self.text.setIndent(10)
+        self.text.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+        self.text.setWordWrap(True)
+        self.text.setTextFormat(Qt.RichText)
         layout.addWidget(self.text)
+
+        self.showingState = show_state
+        if show_state:
+            self.setMinimumSize(QSize(500,350))
+            # Affiche état
+            self.C = FigureCanvas()
+            self.C.minumumSizeHint()
+            layout.addWidget(self.C)
+            self.ax1, self.ax2, self.ax3 = self.C.figure.subplots(1,3)
+            # self.ax1, self.ax2 = self.C.figure.subplots(1,2)
+            self.ax1.axis('off')
+            self.ax2.axis('off')
+            self.ax3.axis('off')
+
+
+
 
         # memory contenant les donnees pour le modele appris
         self.memory = []
@@ -63,6 +95,7 @@ class Recommender(QMainWindow):
         self.setCentralWidget( self.container )
 
         # Timer
+        self.direction = direction
         self.timer = QTimer(self)
         self.timer.setInterval(10)
         self.timer.timeout.connect(self.initMove)
@@ -75,10 +108,10 @@ class Recommender(QMainWindow):
     def topLeft(self):
         # no need to move the point of the geometry rect if you're going to use
         # the reference top left only
-        topLeftPoint = QApplication.desktop().availableGeometry().topLeft()
-        self.move(topLeftPoint + QPoint(- self.size().width(),100))
+        G = QApplication.desktop().availableGeometry()
+        topLeftPoint = G.topRight() +QPoint(0, self.size().width() + 100)
+        self.move(topLeftPoint + QPoint(0,-self.size().height() - 10))
         self.timer.start()
-        pass
         
 
     def update(self, state,stateHardcode,texteditor,command):
@@ -111,12 +144,13 @@ class Recommender(QMainWindow):
                 
                 # nous avons suffisament recommande on n'affiche rien (cela sera pareil pour le modele hard code)
                 if self.recommendThresholdML[ind] >= self.stopRecom:
-                    self.setText("")
+                    self.setText(None)
                     ok = False
                     break
                 
                 # on affiche la commande predite avec la confiance
-                self.setText(f'Predicted Command: {pred_command}\n') #La confiance du besoin de cette recommandation est : {confiance}')
+                #self.setText(f'Predicted Command: {pred_command}\n') #La confiance du besoin de cette recommandation est : {confiance}')
+                self.setText(pred_command)
 
                 self.memory.clear()
                 self.memory2.clear()
@@ -188,7 +222,7 @@ class Recommender(QMainWindow):
 
             # Si la commande trouvee est deja utilisee suffisament on evite de recommander 
             if self.recommendThreshold[ind] >= self.stopRecom:
-                pred_command = ""
+                pred_command = None
 
             # On veut eviter de continuer a recommander trop
             if pred_command == command:
@@ -208,21 +242,24 @@ class Recommender(QMainWindow):
         self.memory2.append(state)
         if m_size2 >= self.max_size_memory: self.memory2.pop(0)
 
-    def setText(self, text):
-        self.text.setText(text)
+    def setText(self, command):
+        r =f'<div style="font-weight:600; color:#aa0000;">{command}</div>'
+        t1 = f'<div style="font-size:14px;">Vous devriez peut-être utiliser la commande</div>'
+
+        self.text.setText(f'{t1}:{r}')
 
     
     # Normal move
     def initMove(self, waitTime = 2000):
         self.timer.setInterval(10)
-        self.move(self.pos() + QPoint(self.mode*5,0))
-        maxRight = QApplication.desktop().availableGeometry().left()
+        self.move(self.pos() + QPoint(self.mode*5*(-1),0))
+        maxRight = QApplication.desktop().availableGeometry().right() - self.size().width()
         if self.mode == 1:
-            if self.pos().x() >= maxRight+10:
+            if self.pos().x() <= maxRight-10:
                 self.mode = -1
                 self.timer.setInterval(waitTime)
         else:
-            if self.pos().x() <= maxRight - self.size().width():
+            if self.pos().x() >= maxRight + self.size().width():
                 self.mode = 1
                 self.timer.stop()
 
