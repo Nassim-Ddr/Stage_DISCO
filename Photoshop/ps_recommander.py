@@ -18,8 +18,8 @@ class Photoshop_Recommander(QMainWindow) :
         super().__init__()
         print("recommander_launched")
         
-        self.ps = Photoshop()
-        self.doc = self.ps._ps.ActiveDocument
+        # self.ps = Photoshop()
+        # self.doc = self.ps._ps.ActiveDocument
 
         #This folder will be used to temporarly save screenshots
         self.tmp_folder = "C:\\Users\\Nassim\\Desktop\\Stage_DISCO\\Photoshop\\data\\portraits_tmp\\"
@@ -30,10 +30,10 @@ class Photoshop_Recommander(QMainWindow) :
         self.histo_cpt = 1
         self.histo = [] 
 
-        #Init the states
-        self.ps.save_jpeg(doc=self.doc, savepath=self.tmp_folder, jpeg_filename="tmp_0")
-        self.current_state = imread(self.tmp_folder + "tmp_0.jpg")
-        self.old_state = None
+        # #Init the states
+        # self.ps.save_jpeg(doc=self.doc, savepath=self.tmp_folder, jpeg_filename="tmp_0")
+        # self.current_state = imread(self.tmp_folder + "tmp_0.jpg")
+        # self.old_state = None
 
         #Init the models
         self.model = model
@@ -43,26 +43,26 @@ class Photoshop_Recommander(QMainWindow) :
 
         #Alert to display when we have a recomandation 
         self.alert = Recommender_UI()
+        self.alert.show()
         
         #Init photoshop variables
-        self.doc = self.ps._ps.ActiveDocument
-        self.observe()
+        # self.doc = self.ps._ps.ActiveDocument
+        self.timer = QTimer(self)
+        self.timer.setInterval(self.dist_between_states*1000)
+        self.timer.timeout.connect(self.observe)
 
-    def observe(self) : 
-        while(True) : 
-            try :
-                self.ps.save_jpeg(doc=self.doc, savepath=self.tmp_folder, jpeg_filename="tmp_" + str(self.histo_cpt))
-            except : 
-                print("Warning : Can't save (App is busy)")
-                time.sleep(self.dist_between_states)
-                continue
-            self.histo.append(self.current_state)
-            self.old_state = self.current_state
-            self.current_state = imread(self.tmp_folder + "tmp_" + str(self.histo_cpt) + ".jpg")
-            self.histo_cpt += 1
-            self.check_better_command()
-            print(self.histo_cpt)
-            time.sleep(self.dist_between_states)
+    def observe(self) :
+        try: 
+            self.ps.save_jpeg(doc=self.doc, savepath=self.tmp_folder, jpeg_filename="tmp_" + str(self.histo_cpt))
+        except : 
+            print("Warning : Can't save (App is busy)")
+            # time.sleep(self.dist_between_states)
+        self.histo.append(self.current_state)
+        self.old_state = self.current_state
+        self.current_state = imread(self.tmp_folder + "tmp_" + str(self.histo_cpt) + ".jpg")
+        self.histo_cpt += 1
+        self.check_better_command()
+        print(self.histo_cpt)
 
     def check_better_command(self) : 
         # for old_state in self.histo[:-5] : 
@@ -89,9 +89,10 @@ class Photoshop_Recommander(QMainWindow) :
 
 if __name__ == '__main__' : 
 
-    model = load_LeNet("./models/model_retrain")
-    preprocess = LeNet_Preprocess()
+    #model = load_LeNet("./models/model_retrain")
+    #preprocess = LeNet_Preprocess()
 
     app = QApplication(sys.argv)
-    recommander = Photoshop_Recommander(model, preprocess)
+    # recommander = Photoshop_Recommander(model, preprocess)
+    recommander = Photoshop_Recommander(None, None)
     sys.exit(app.exec_())
