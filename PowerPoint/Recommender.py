@@ -21,99 +21,138 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from Model import *
 
 # Recommender: interface qui affiche les prédictions du modèle
+# model: qui fait les prédictions sur les états de l'application
+# max_size_memory: taille de l'historique des états
+# parent: parent du widget (optionnel)
+# show_state: affiche ou pas les états du résultat final
+# moving: déplace ou non le widget pour cacher et sort si on a fait une prédiction
 class Recommender(QMainWindow):
-    def __init__(self, model, max_size_memory = 5, parent = None, show_state = False):
+    def __init__(self, model, max_size_memory = 5, parent = None, show_state = False, moving= True, title = "Assistant PowerPoint"):
         QMainWindow.__init__(self, parent )
         # Interface du recommender
-        self.setWindowTitle("Assistant qui bourre le pantalon")
         b = True
         if b:
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
             self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setMinimumSize(QSize(250,150))
+        self.setMinimumSize(QSize(280,150))
         self.container = QWidget()
         layout = QVBoxLayout(self.container)
+        layout.setSpacing(0)
+        # Title bar
+        label = QLabel(title, self.container)
+        label.setStyleSheet(f"""
+            Background: #b8442c;
+            color:white;font:15px bold;
+            font-weight:bold;
+            height: 11px;""")
+        label.setFixedHeight(30)
+        label.setIndent(10)
+        layout.addWidget(label)
+        
         # Affichage de la recommandation
-        self.text = QLabel(self.container)
-        self.text.setText("HELLO WORLD")
-        self.text.setStyleSheet("margin-left: 10px; border-radius: 20px; background: silver; color: #4A0C46; font-size:15px")
-        self.text.setAlignment(Qt.AlignCenter)
-        self.text.setMinimumSize(QSize(200,100))
+        self.text = QLabel("HELLO WORLD", self.container)
+        self.text.setStyleSheet("""
+                                background: white; 
+                                color: #4A0C46; 
+                                font-size:16px;
+                                font-weight: 500;""")
+        self.text.setIndent(10)
+        self.text.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+        self.text.setWordWrap(True)
+        self.text.setTextFormat(Qt.RichText)
         layout.addWidget(self.text)
 
-        self.showState = show_state
+        self.showingState = show_state
         if show_state:
+            self.setMinimumSize(QSize(500,350))
             # Affiche état
             self.C = FigureCanvas()
+            self.C.minumumSizeHint()
             layout.addWidget(self.C)
             self.ax1, self.ax2, self.ax3 = self.C.figure.subplots(1,3)
+            # self.ax1, self.ax2 = self.C.figure.subplots(1,2)
             self.ax1.axis('off')
             self.ax2.axis('off')
             self.ax3.axis('off')
 
         # variable du recommender
-        #self.model = Model(model, ["AlignBottom", "AlignLeft", 'AlignRight', 'AlignTop'])
-        self.model = HardCodedModel()
+        self.model = model
         self.memory = []
         self.count = 1
         self.max_size_memory = max_size_memory
-
+    
         self.initUI()
         self.setCentralWidget( self.container )
 
         # Timer
-        self.timer = QTimer(self)
-        self.timer.setInterval(10)
-        self.timer.timeout.connect(self.initMove)
-        self.mode = 1
+        self.moving = moving
+        if self.moving:
+            self.timer = QTimer(self)
+            self.timer.setInterval(10)
+            self.timer.timeout.connect(self.initMove)
+            self.mode = 1
 
 
     def initUI(self):
         QTimer.singleShot(1, self.topLeft)
         self.show()
 
+    diff = 0
     def topLeft(self):
         # no need to move the point of the geometry rect if you're going to use
         # the reference top left only
         topLeftPoint = QApplication.desktop().availableGeometry().bottomLeft()
-        self.move(topLeftPoint + QPoint(- self.size().width(),-300))
-        self.timer.start()
-        pass
-
-    def paintEvent(self, _):
-        # painter = QPainter(self)
-        # painter.setOpacity(0.0)
-        # painter.setBrush(Qt.white)
-        # painter.setPen(QPen(Qt.white))   
-        # painter.drawRect(self.rect())
-        pass
+        if self.moving:
+            self.move(topLeftPoint + QPoint(- self.size().width(),-self.size().height() - 10 - Recommender.diff))
+            self.timer.start()
+        else:
+            self.move(topLeftPoint + QPoint(0,-self.size().height() - 10 - Recommender.diff))
+        Recommender.diff += self.size().height() - 10
+        print(f'{self.diff = }')
 
     def update(self, state, autre=None, command = None):
         print(" =========== Predicting ? =============")
         state = self.QImageToCvMat(state)
         m_size = len(self.memory)
         if m_size > 0:
-            #preds_conf = np.array([self.model.predict(s, state) for s in self.memory])
-            #index = np.argmax(preds_conf[:,1])
-            #pred_command, confiance = preds_conf[index]
-            pred_command, confiance = self.model.predict(self.memory[-1], autre), "Tellement confiant"
-            if pred_command != 'Rien du Tout': 
-                if command == pred_command: print(f"Filtered command: {pred_command}")
-                else:
-                    self.setText(f'n° {self.count}\nPredicted Command: {pred_command}\nConfiance: {confiance}')
-                    self.count += 1
-                    #self.showState(self.memory[index], state)
+            if isinstance(self.model, HardCodedModel):
+                pred_command, confiance = self.model.predict(self.memory[-1], autre), "Tellement confiant"
+                if pred_command != 'Rien du Tout': 
+                    if command == pred_command and False: print(f"Filtered command: {pred_command}")
+                    else:
+                        self.setText(pred_command)
+                        self.count += 1
+                        if self.moving:
+                            self.mode = 1
+                            self.timer.start()
+            else:
+                preds_conf = np.array([self.model.predict(s, state) for s in self.memory])
+                index = np.argmax(preds_conf[:,1])
+                index = -1
+                pred_command, confiance = preds_conf[index]
+                self.setText(pred_command, confiance)
+
+                if self.showingState: self.showState(self.memory[index], state)
+                if self.moving:
                     self.mode = 1
                     self.timer.start()
+
             
         # ajoute l'etat precedent
         # supprime si la liste est trop grande
-        self.memory.append(autre)
+        if isinstance(self.model, HardCodedModel): self.memory.append(autre)
+        else: self.memory.append(state)
         if m_size >= self.max_size_memory: self.memory.pop(0)
 
-    def setText(self, text):
-        self.text.setText(text)
+    def setText(self, cmd, confiance = None):
+        self.count += 1
+        r =f'<span style="font-weight:600; color:#aa0000;">{cmd}</span>'
+        c =f'<span style="font-weight:600; color:#aa0000;">{confiance}</span>'
+        if confiance is None:
+            self.text.setText(f'Prediction n°{self.count}:\n{r}')
+        else:
+            self.text.setText(f'Prediction n°{self.count}: {r}\nConfiance: {c}')
 
     def QImageToCvMat(self, image):
         image.save(f'./images/state.jpg')
@@ -123,7 +162,9 @@ class Recommender(QMainWindow):
     
     def showState(self, a, b):
         # display transition between b
-        for ax, title in zip([self.ax1,  self.ax2,  self.ax3],  ["Before", "After", 'Input to Model']):
+        z = zip([self.ax1,  self.ax2,  self.ax3],  ["Before", "After", 'Input to Model'])
+        # z = zip([self.ax1,  self.ax2],  ["Before", "After"])
+        for ax, title in z:
             ax.clear()
             ax.tick_params(left = False, right = False , labelleft = False ,
                            labelbottom = False, bottom = False)
@@ -131,7 +172,7 @@ class Recommender(QMainWindow):
 
         self.ax1.imshow(a)
         self.ax2.imshow(b)
-        self.ax3.imshow(self.model.process.getOnlyMovingObject(a,b))
+        self.ax3.imshow(T.ToPILImage()(self.model.input(a,b)[0]))
         self.C.draw()
 
     # Train move

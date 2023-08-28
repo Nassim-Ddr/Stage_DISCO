@@ -386,8 +386,9 @@ class Canvas(QWidget):
             for _ in range(50):
                 inside = False
                 x1,y1, x2,y2 = np.random.randint(0,300, size=4)
-                r,g,b = np.random.randint(0, 255, size=3)
-                args = (QRect(QPoint(x1,y1), QPoint(x2,y2)), QColor(r,g,b))
+                c1 = QColor(*np.random.randint(0, 255, size=3))
+                c2 = QColor(*np.random.randint(0, 255, size=3))
+                args = (QRect(QPoint(x1,y1), QPoint(x2,y2)), c1, c2)
                 figure = QRectPlus(*args) if rand==0 else QEllipse(*args)
                 for r in L:
                     if figure.contains(r) or r.contains(figure):

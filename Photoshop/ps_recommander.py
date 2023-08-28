@@ -17,8 +17,8 @@ class Photoshop_Recommander(QMainWindow) :
         super().__init__()
         print("recommander_launched")
         
-        self.ps = Photoshop()
-        self.doc = self.ps._ps.ActiveDocument
+        # self.ps = Photoshop()
+        # self.doc = self.ps._ps.ActiveDocument
 
         #This folder will be used to temporarly save screenshots
         self.tmp_folder = "C:\\Users\\Nassim\\Desktop\\Stage_DISCO\\Photoshop\\data\\portraits_tmp\\"
@@ -34,6 +34,7 @@ class Photoshop_Recommander(QMainWindow) :
         self.current_state = imread(self.tmp_folder + "tmp_0.jpg")
         self.old_state = None
 
+
         #Init the models
         self.model = model
         self.preprocess = preprocess
@@ -46,6 +47,7 @@ class Photoshop_Recommander(QMainWindow) :
         
         #Init photoshop variables
         self.doc = self.ps._ps.ActiveDocument
+
         self.timer = QTimer(self)
         self.timer.setInterval(self.dist_between_states*1000)
         self.timer.timeout.connect(self.observe)
@@ -95,4 +97,5 @@ if __name__ == '__main__' :
     recommander = Photoshop_Recommander(model, preprocess)
     # recommander = Photoshop_Recommander(None, None)
     recommander.observe()
+
     sys.exit(app.exec_())

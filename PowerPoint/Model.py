@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torchvision.transforms import ToTensor, transforms
+from torchvision.transforms import transforms
 import torchvision.transforms as T
 from PIL import Image
 from CanvasTools import *
@@ -13,29 +13,28 @@ from CanvasTools import *
 ## classe_names: class_label mapping
 ## process: pre-processing before going into the model
 class Model():
-    def __init__(self, filename, classe_names = None):
-        self.model = LeNet() # create instance of pytorch model
-        self.model.load_state_dict(torch.load(filename)) # loading parameters
+    def __init__(self, model, transform_function, classe_names = None, tak2Image2Image = True):
+        self.model = model
+        self.transform_function = transform_function
         self.classe_names = classe_names
-        self.process = Preprocessing()
+        self.tak2Image2Image = tak2Image2Image
+        #self.process = Preprocessing()
 
-        self.image_transform = transforms.Compose([
-            transforms.ToTensor(),
-            crop(),
-            transforms.Resize((64, 64)),
-        ])
     
     # a, b (np.array): precedent state, current state
     # return (prediction, probability of estimate)
     def predict(self, a, b):
         # Pre-processing
-        b = self.process.getOnlyMovingObject(a,b)
-        s = Image.fromarray(b)
-        x = self.image_transform(s).reshape((1,3,64,64))
-        output = self.model(x) # prediction
+        #b = self.process.getOnlyMovingObject(a,b)
+        output = self.model(self.input(a,b)) # prediction
         index = output.argmax(1) # index with highest probability
         if self.classe_names is not None: index = self.classe_names[index] # change to class label
         return index, round(output.softmax(dim=1).max().item(),3)
+    
+    def input(self, a, b):
+        s = np.concatenate((a,b), 1) if self.tak2Image2Image else b
+        s = Image.fromarray(s)
+        return self.transform_function(s).unsqueeze(0)
 
 # Pytorch model
 class LeNet(nn.Module):
@@ -47,32 +46,97 @@ class LeNet(nn.Module):
         self.fc2 = nn.Linear(1024, 256)
         self.fc3 = nn.Linear(256, 4)
 
+        self.transform = transforms.Compose([ 
+            transforms.ToTensor(),
+            crop(),
+            transforms.Resize((64, 64)),
+        ])
+
     def forward(self, x):
         x = F.relu(self.conv1(x))
-        x = F.max_pool2d(x, 2)
+        x = -F.max_pool2d(-x, 2)
         x = F.relu(self.conv2(x))
-        x = F.max_pool2d(x, 2)
+        x = -F.max_pool2d(-x, 2)
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
+
+class LeNet2(nn.Module):
+    def __init__(self):
+        super(LeNet2, self).__init__()
+        self.conv1 = nn.Conv2d(3, 4, kernel_size=8, stride=1, padding="same")
+        self.conv2 = nn.Conv2d(4, 8, kernel_size=4, stride=1, padding="same")
+        self.conv3 = nn.Conv2d(8, 16, kernel_size=4, stride=1,  padding="same")
+        self.fc1 = nn.Linear(2048,1024)
+        self.fc2 = nn.Linear(1024, 256)
+        self.fc3 = nn.Linear(256, 4)
+
+        self.process_2image = transforms.Compose([
+            transforms.ToTensor(),
+            crop_normal(),
+            transforms.Resize((64, 128)),
+        ])
+
+        self.process_1image = transforms.Compose([
+            transforms.ToTensor(),
+            crop(),
+            transforms.Resize((64, 64)),
+        ])
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = -F.max_pool2d(-x, 2)
+        x = F.relu(self.conv2(x))
+        x = -F.max_pool2d(-x, 2)
+        x = F.relu(self.conv3(x))
+        x = -F.max_pool2d(-x, 2)
+        x = x.view(x.size(0), -1)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
     
 # Crop Image: Pre-processing class: go inside pytorch transform.Compose
 # Take only the bounding box taking inside all objects in powerpint
 class crop(object):
     def __call__(self, img):
         # indexes of non-white pixel
-        a = np.where(img.mean(0) != 1)
-        try:
-            # Calculate bounding box
-            x1,x2,y1,y2 = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
-            h,w = img[:, x1:x2,y1:y2].shape[1:]
-            # check if the bounding box is too small
-            if h<64 or w<64: return img
-            return img[:, x1:x2,y1:y2]
-        except:
-            return img
+        x1, x2, y1,y2 = find_rect(img)
+        return img[:, x1:x2, y1:y2]
+    
+    def __repr__(self):
+        return self.__class__.__name__+'()'
+    
+def find_rect(x):
+    a = np.where(x.mean(0) != 1)
+    h,w = x.shape[1:]
+    try:
+        # Calculate bounding box
+        x1,x2,y1,y2 = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])     
+        # check if the bounding box is too small
+        if x2-x1<64 or y2-y1<64: return 0,h,0,w
+        return x1,x2,y1,y2
+    except: return 0,h,0,w
+
+class crop_normal(object):
+    def __call__(self, img):
+        # indexes of non-white pixel
+        h,w = img.shape[1:]
+        img1, img2 = torch.split(img, w//2, dim=2)
+        x11,x12,y11,y12 = find_rect(img1)
+        x21,x22,y21,y22 = find_rect(img2)
+        x1, y1 = min(x11, x21), min(y11,y21)
+        x2, y2 = max(x12, x22), max(y12,y22)
+        h,w = img.shape[1:]
+        h = h//2
+        w = w//2
+        s_x = np.arange(x1, x2)
+        s_y = np.hstack((np.arange(y1, y2), np.arange(w+y1, w+y2)))
+        #print(f'{img.shape = }\n{s_x.max() = }\n{s_y.max() = }')
+        return img[:,:,s_y][:,s_x,:]
     
     def __repr__(self):
         return self.__class__.__name__+'()'
@@ -151,6 +215,9 @@ class HardCodedModel():
     
     def predictCopyDrag(self, a, b, eps = 20):
         if len(a) == len(b):
+            B = np.abs([self.state(o) for o in b if not isinstance(o,QRectGroup)])
+            A = np.abs([self.state(o) for o in a if not isinstance(o,QRectGroup)])
+            if np.abs(B-A).sum() < 1: return
             # Objets non groupés
             B = np.abs([self.stateGroup(o) for o in b if not isinstance(o,QRectGroup)])
             A = np.abs([self.stateGroup(o) for o in a if not isinstance(o,QRectGroup)])
@@ -280,14 +347,48 @@ class HardCodedModel():
         return index1, index2, np.all((L1[index1] - L2[index2]) <= eps)
 
             
+##################### Train Function #########################
+device = (
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps"
+    if torch.backends.mps.is_available()
+    else "cpu"
+)
 
-    
-# Premier Plan / Arrière Plan
-# Copy Style
-# EyeDropper
+def train(dataloader, model, loss_fn, optimizer):
+    size = len(dataloader.dataset)
+    model.train()
+    for batch, (X, y) in enumerate(dataloader):
+        X, y = X.to(device), y.to(device)
+
+        # Compute prediction error
+        pred = model(X)
+        loss = loss_fn(pred, y)
+
+        # Backpropagation
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+        if batch % 100 == 0:
+            loss, current = loss.item(), (batch + 1) * len(X)
+            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")       
             
-            
-        
+def test(dataloader, model, loss_fn):
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
+    model.eval()
+    test_loss, correct = 0, 0
+    with torch.no_grad():
+        for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+    test_loss /= num_batches
+    correct /= size
+    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")    
 
 
 

@@ -142,6 +142,41 @@ On s'est inspiré de LeNet pour créer ce modèle
 - accuracy, ...
 - temps de  prédiction
 
+Evaluation sur les données de test
+1. Model Alignement avec état courant seulement
+Test performance: 0.775
+========= Precision ==============
+alignBottom : 0.815
+alignLeft : 0.811
+alignRight : 0.734
+alignTop : 0.743
+
+2. Model Alignement avec état courant + état précedent (selection tout)
+Test performance: 0.939
+========= Precision ==============
+alignBottom : 0.979
+alignLeft : 0.938
+alignRight : 0.954
+alignTop : 0.887
+
+3. Model Alignement avec état courant + état précedent (selection partielle)
+Test performance: 0.895
+========= Precision ==============
+alignBottom : 0.915
+alignLeft : 0.896
+alignRight : 0.889
+alignTop : 0.878
+
+Evaluation en pratique
+1. détecte bien les alignement en pratique, si l'alignement se fait sur tous les objets présents. A des difficultés pour les alignements sur seulement une partie des objets du diapositives
+
+2. détecte les alignements, mais seulement lorsque on fait un déplacement semblable aux commandes d'alignements (exemple déplacer les objets en diagonales peut causer des problèmes car le classifier n'a jamais eu ces types de données)
+
+3. détecte les alignements et meilleure que le modèle 2. lorsqu'on aligne une partie des objets 
+
+=> model 2 et 3 prend en compte le déplacement des objets, il semblerait comme on l'entraîne sur la commande alignement, il a prends plus en compte le déplacement des objets plutôt que  l'état final ce qui est correcte mais faux également. Par exemple, si on fait un alignement à droite à la main en déplaçant l'objet vers la gauche, le modèle a plus tendance à prédire que c'est un alignement à gauche. Cela s'expplique par la commande d'alignement, car un alignement à droite, s'accompagne toujours d'un déplacement d'un objet vers la droite des objets leplus à gauche plutôt que des objets le plus à droite.
+
+
 ### Hardcode
 - Points où ça marche
 - Points où ça marche pas
@@ -149,8 +184,6 @@ On s'est inspiré de LeNet pour créer ce modèle
 # Recommender
 - temps de réponse
 ## comment ça fonctionne ?
-
-
 
 # Conclusion
 - ouverture, points à améliorer, ce qu'on peut faire
