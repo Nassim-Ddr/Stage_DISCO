@@ -122,7 +122,6 @@ class Recommender(QMainWindow):
                     if command == pred_command and False: print(f"Filtered command: {pred_command}")
                     else:
                         self.setText(pred_command)
-                        self.count += 1
                         if self.moving:
                             self.mode = 1
                             self.timer.start()
