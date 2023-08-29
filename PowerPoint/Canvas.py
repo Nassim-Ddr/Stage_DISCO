@@ -99,10 +99,14 @@ class Canvas(QWidget):
             self.pStart = (self.cursorPos/self.scale - self.painterTranslation)
             if self.mode=='draw':
                 self.cursorPos = (event.pos()/self.scale - self.painterTranslation)
-                if self.currentTool == "drawRect":
-                    self.Lforms.append(QRectPlus(QRect(self.pStart, self.pStart), self.bkcolor, self.border_color, self.width))
-                else:
-                    self.Lforms.append(QEllipse(QRect(self.pStart, self.pStart), self.bkcolor, self.border_color, self.width))
+                args = (QRect(self.pStart, self.pStart), self.bkcolor, self.border_color, self.width)
+                match self.currentTool:
+                    case "drawRect":
+                        self.Lforms.append(QRectPlus(*args))
+                    case "drawTriangle":
+                        self.Lforms.append(QTriangle(*args))
+                    case other:
+                        self.Lforms.append(QEllipse(*args))
             self.update()
                             
     def mouseMoveEvent(self, event):
@@ -246,6 +250,8 @@ class Canvas(QWidget):
             self.currentTool = "drawRect"
         elif tool == "ellipse":
             self.currentTool = "drawEllipse"
+        elif tool == 'triangle':
+            self.currentTool = "drawTriangle"
     
     # On change le mode du canvas
     @pyqtSlot()
