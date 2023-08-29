@@ -35,7 +35,7 @@ class Recommender(QMainWindow):
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
             self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setMinimumSize(QSize(280,150))
+        self.setMinimumSize(QSize(280*2,250))
         self.container = QWidget()
         layout = QVBoxLayout(self.container)
         layout.setSpacing(0)
@@ -43,21 +43,21 @@ class Recommender(QMainWindow):
         label = QLabel(title, self.container)
         label.setStyleSheet(f"""
             Background: #b8442c;
-            color:white;font:15px bold;
+            color:white;font:24px bold;
             font-weight:bold;
             height: 11px;""")
-        label.setFixedHeight(30)
+        label.setFixedHeight(60)
         label.setIndent(10)
         layout.addWidget(label)
         
         # Affichage de la recommandation
         self.text = QLabel("HELLO WORLD", self.container)
         self.text.setStyleSheet("""
-                                background: white; 
+                                background: #efefef; 
                                 color: #4A0C46; 
-                                font-size:16px;
+                                font-size:24px;
                                 font-weight: 500;""")
-        self.text.setIndent(10)
+        self.text.setIndent(20)
         self.text.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         self.text.setWordWrap(True)
         self.text.setTextFormat(Qt.RichText)
@@ -119,7 +119,7 @@ class Recommender(QMainWindow):
             if isinstance(self.model, HardCodedModel):
                 pred_command, confiance = self.model.predict(self.memory[-1], autre), "Tellement confiant"
                 if pred_command != 'Rien du Tout': 
-                    if command == pred_command and False: print(f"Filtered command: {pred_command}")
+                    if command == pred_command : print(f"Filtered command: {pred_command}")
                     else:
                         self.setText(pred_command)
                         if self.moving:
@@ -146,8 +146,8 @@ class Recommender(QMainWindow):
 
     def setText(self, cmd, confiance = None):
         self.count += 1
-        r =f'<span style="font-weight:600; color:#aa0000;">{cmd}</span>'
-        c =f'<span style="font-weight:600; color:#aa0000;">{confiance}</span>'
+        r =f'<div style="font-weight:600; color:#aa0000;">{cmd}</div>'
+        c =f'<div style="font-weight:600; color:#aa0000;">{confiance}</div>'
         if confiance is None:
             self.text.setText(f'Prediction n°{self.count}:\n{r}')
         else:
@@ -184,7 +184,7 @@ class Recommender(QMainWindow):
         self.move(self.pos() + QPoint(5,0))
 
     # Normal move
-    def initMove(self, waitTime = 2000):
+    def initMove(self, waitTime = 4000):
         self.timer.setInterval(10)
         direction = 1 if self.direction=='left' else -1
         self.move(self.pos() + QPoint(self.mode*5*direction,0))

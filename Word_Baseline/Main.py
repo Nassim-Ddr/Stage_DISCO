@@ -75,7 +75,9 @@ class TitleBar(QDialog):
             self.maximize.setIcon(QIcon("icons/resize.png"))
 
     def close(self):
-        box.close()
+        QCoreApplication.quit()
+        self.parent().close()
+
 
     def mousePressEvent(self,event):
         if event.button() == Qt.LeftButton:
