@@ -24,7 +24,7 @@ class Photoshop_Recommander(QMainWindow) :
         self.tmp_folder = "C:\\Users\\Nassim\\Desktop\\Stage_DISCO\\Photoshop\\data\\portraits_tmp\\"
 
         #This will be used to store the last states of the app
-        self.dist_between_states = 15 # En secondes
+        self.dist_between_states = 5 # En secondes
         self.histo_len = 5
         self.histo_cpt = 1
         self.histo = [] 

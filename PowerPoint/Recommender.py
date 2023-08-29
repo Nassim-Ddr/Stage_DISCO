@@ -119,7 +119,7 @@ class Recommender(QMainWindow):
             if isinstance(self.model, HardCodedModel):
                 pred_command, confiance = self.model.predict(self.memory[-1], autre), "Tellement confiant"
                 if pred_command != 'Rien du Tout': 
-                    if command == pred_command and False: print(f"Filtered command: {pred_command}")
+                    if command == pred_command : print(f"Filtered command: {pred_command}")
                     else:
                         self.setText(pred_command)
                         if self.moving:
