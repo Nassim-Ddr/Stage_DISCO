@@ -24,22 +24,51 @@ class Recommender_UI(QMainWindow):
     def __init__(self, parent = None, show_state = False):
         QMainWindow.__init__(self, parent )
         # Interface du recommender
-        self.setWindowTitle("Assistant qui bourre le pantalon")
+        self.setWindowTitle("Assistant")
         b = True
         if b:
-            self.setWindowFlags(Qt.FramelessWindowHint)
+            self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
             self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setMinimumSize(QSize(250,150))
+        self.setMinimumSize(QSize(400,200))
         self.container = QWidget()
         layout = QVBoxLayout(self.container)
+        layout.setSpacing(0)
+        # Title bar
+        label = QLabel("Assistant Photoshop", self.container)
+        label.setStyleSheet(f"""
+            Background: #6a6a6a;
+            color:white;font:20px bold;
+            font-weight:bold;
+            height: 11px;""")
+        label.setFixedHeight(40)
+        label.setIndent(10)
+        layout.addWidget(label)
         # Affichage de la recommandation
-        self.text = QLabel(self.container)
-        self.text.setText("HELLO WORLD")
-        self.text.setStyleSheet("margin-left: 10px; border-radius: 20px; background: white; color: #4A0C46; font-size:12px")
-        self.text.setAlignment(Qt.AlignCenter)
-        self.text.setMinimumSize(QSize(200,100))
+        self.text = QLabel("HELLO WORLD", self.container)
+        self.text.setStyleSheet("""
+                                background: #efefef; 
+                                color: black; 
+                                font-size:20px;
+                                font-weight: 500;""")
+        self.text.setIndent(20)
+        self.text.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+        self.text.setWordWrap(True)
+        self.text.setTextFormat(Qt.RichText)
         layout.addWidget(self.text)
+
+        self.showingState = show_state
+        if show_state:
+            self.setMinimumSize(QSize(500,350))
+            # Affiche état
+            self.C = FigureCanvas()
+            self.C.minumumSizeHint()
+            layout.addWidget(self.C)
+            self.ax1, self.ax2, self.ax3 = self.C.figure.subplots(1,3)
+            # self.ax1, self.ax2 = self.C.figure.subplots(1,2)
+            self.ax1.axis('off')
+            self.ax2.axis('off')
+            self.ax3.axis('off')
 
 
         self.initUI()
@@ -60,11 +89,12 @@ class Recommender_UI(QMainWindow):
         # no need to move the point of the geometry rect if you're going to use
         # the reference top left only
         topLeftPoint = QApplication.desktop().availableGeometry().topLeft()
-        self.move(topLeftPoint + QPoint(- self.size().width(),50))
+        self.move(topLeftPoint + QPoint(- self.size().width(), 150))
         self.timer.start()
         pass
 
     def update(self, text, autre=None):
+        print("started")
         self.setText(text)
         self.mode = 1
         self.timer.start()
@@ -79,10 +109,10 @@ class Recommender_UI(QMainWindow):
         right = self.pos().x()
         if right >= maxRight:
             self.topLeft()
-        self.move(self.pos() + QPoint(5,0))
+        self.move(self.pos() + QPoint(10,0))
 
     # Normal move
-    def initMove(self, waitTime = 2000):
+    def initMove(self, waitTime = 4000):
         self.timer.setInterval(10)
         self.move(self.pos() + QPoint(self.mode*5,0))
         maxRight = QApplication.desktop().availableGeometry().left()

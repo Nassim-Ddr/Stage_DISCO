@@ -20,7 +20,7 @@ class Recommender(QMainWindow):
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
             self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setMinimumSize(QSize(300,300))
+        self.setMinimumSize(QSize(280*2,250))
         self.container = QWidget()
         layout = QVBoxLayout(self.container)
         layout.setSpacing(0)
@@ -28,7 +28,7 @@ class Recommender(QMainWindow):
         label = QLabel(title, self.container)
         label.setStyleSheet(f"""
             Background: #2B579A;
-            color:white;font:15px bold;
+            color:white;font:24px bold;
             font-weight:bold;
             height: 11px;""")
         label.setFixedHeight(30)
@@ -38,11 +38,11 @@ class Recommender(QMainWindow):
          # Affichage de la recommandation
         self.text = QLabel("HELLO WORLD", self.container)
         self.text.setStyleSheet("""
-                                background: white; 
+                                background: #fefefe; 
                                 color: #4A0C46; 
-                                font-size:16px;
+                                font-size:24px;
                                 font-weight: 500;""")
-        self.text.setIndent(10)
+        self.text.setIndent(20)
         self.text.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         self.text.setWordWrap(True)
         self.text.setTextFormat(Qt.RichText)
@@ -75,9 +75,9 @@ class Recommender(QMainWindow):
         self.modelHard = HardCodedModel(texteditor,historySize=max_size_memory)
         # variable du recommender
         # self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
-        self.commands = ["WriteWord","CopyPaste (CTRL + C -> CTRL + V)","WordDel (CTRL + Backspace)","Search&Replace (CTRL + R)"]
+        self.commands = ["WriteWord","CopyPaste \n(CTRL + C -> CTRL + V)","WordDel \n(CTRL + Backspace)","Search&Replace \n(CTRL + R)"]
         self.model = Model(model, self.commands)
-        self.hardCodedCommands = ["CTRL+ A (SelectAll)", 
+        self.hardCodedCommands = ["CTRL+ A \n(SelectAll)", 
         "Shift + Fin (End) Button", 
         "CTRL + Shift + Right", 
         "Fin (End)", 
@@ -250,13 +250,13 @@ class Recommender(QMainWindow):
         if command is None:
             return
         r =f'<div style="font-weight:600; color:#aa0000;">{command}</div>'
-        t1 = f'<div style="font-size:14px;">Vous devriez peut-être utiliser la commande</div>'
+        t1 = f'<div style="font-size:24px;">Vous devriez peut-être utiliser la commande</div>'
 
         self.text.setText(f'{t1}:{r}')
 
     
     # Normal move
-    def initMove(self, waitTime = 2000):
+    def initMove(self, waitTime = 4000):
         self.timer.setInterval(10)
         self.move(self.pos() + QPoint(self.mode*5*(-1),0))
         maxRight = QApplication.desktop().availableGeometry().right() - self.size().width()
