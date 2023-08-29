@@ -454,17 +454,32 @@ class MainWindow(QMainWindow):
         return len(re.findall(r'\b' + re.escape(word_to_count) + r'\b', txt, re.IGNORECASE))
 
     
+    # Surligne du texte
     def surligne(self, search_text):
-        format = QTextCharFormat()
-        format.setBackground(QColor("orange"))
+        new = QTextCharFormat()
+        new.setBackground(QColor("orange"))
 
         cursor = QTextCursor(self.text_edit.document())
         while not cursor.isNull():
             cursor = self.text_edit.document().find(search_text, cursor)
 
             if not cursor.isNull():
-                cursor.mergeCharFormat(format)
+                cursor.mergeCharFormat(new)
                 cursor.clearSelection()
+            
+    # retire le surlignement
+    def unsurligne(self, text):
+        new = QTextCharFormat()
+        new.setBackground(QColor("white"))
+
+        cursor = QTextCursor(self.text_edit.document())
+        while not cursor.isNull():
+            cursor = self.text_edit.document().find(text, cursor)
+
+            if not cursor.isNull():
+                cursor.mergeCharFormat(new)
+                cursor.clearSelection()
+
     
 
     def replace(self):
@@ -487,14 +502,18 @@ class MainWindow(QMainWindow):
                     cursor.insertText(replace_text)
                     # Recherche l'occurrence suivante du texte recherché
                     cursor = document.find(search_text, cursor)
+                self.unsurligne(replace_text)
             else:
+                self.unsurligne(search_text)
                 return
         else :
             return
-        self.text_edit.selectAll()
-        self.text_edit.setCurrentCharFormat(QTextCharFormat())
-        self.text_edit.textCursor().clearSelection()
-        self.text_edit.setTextCursor(oldCursor)
+        # self.text_edit.selectAll()
+        # self.text_edit.setCurrentCharFormat(QTextCharFormat())
+        # self.text_edit.textCursor().clearSelection()
+        # self.text_edit.setTextCursor(oldCursor)
+
+        
 
         self.text_edit.handle_replace()
     
