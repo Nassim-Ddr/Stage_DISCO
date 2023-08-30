@@ -34,11 +34,11 @@ class Recommender(QMainWindow):
         if b:
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
-            self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setMinimumSize(QSize(280*2,250))
         self.container = QWidget()
         layout = QVBoxLayout(self.container)
         layout.setSpacing(0)
+        layout.setContentsMargins(2,2,2,2)
         # Title bar
         label = QLabel(title, self.container)
         label.setStyleSheet(f"""
@@ -53,6 +53,7 @@ class Recommender(QMainWindow):
         # Affichage de la recommandation
         self.text = QLabel("HELLO WORLD", self.container)
         self.text.setStyleSheet("""
+                                border: black;
                                 background: #efefef; 
                                 color: #4A0C46; 
                                 font-size:24px;
@@ -81,6 +82,7 @@ class Recommender(QMainWindow):
         self.memory = []
         self.count = 1
         self.max_size_memory = max_size_memory
+        self.prev_recommendation = "Rien du Tout"
     
         self.initUI()
         self.setCentralWidget( self.container )
@@ -118,12 +120,16 @@ class Recommender(QMainWindow):
             if isinstance(self.model, HardCodedModel):
                 pred_command, confiance = self.model.predict(self.memory[-1], autre), "Tellement confiant"
                 if pred_command != 'Rien du Tout': 
-                    if command == pred_command : print(f"Filtered command: {pred_command}")
+                    if command == pred_command or self.prev_recommendation == pred_command: 
+                        print(f"Filtered command: {pred_command}")
                     else:
                         self.setText(pred_command)
+                        self.prev_recommendation = pred_command
                         if self.moving:
                             self.mode = 1
                             self.timer.start()
+                else:
+                    self.prev_recommendation = "Rien du Tout"
             else:
                 state = self.QImageToCvMat(state)
                 preds_conf = np.array([self.model.predict(s, state) for s in self.memory])
@@ -149,9 +155,9 @@ class Recommender(QMainWindow):
         r =f'<div style="font-weight:600; color:#aa0000;">{cmd}</div>'
         c =f'<div style="font-weight:600; color:#aa0000;">{confiance}</div>'
         if confiance is None:
-            self.text.setText(f'Prediction n°{self.count}:\n{r}')
+            self.text.setText(f'Recommendation n°{self.count}:\n{r}')
         else:
-            self.text.setText(f'Prediction n°{self.count}: {r}\nConfiance: {c}')
+            self.text.setText(f'Recommendation n°{self.count}: {r}\nConfiance: {c}')
 
     def QImageToCvMat(self, image):
         if not image.save("images/state.png"):
