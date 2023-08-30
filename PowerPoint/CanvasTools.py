@@ -48,6 +48,21 @@ class QEllipse(QRectPlus):
 
     def copy(self):
         return QEllipse(self, self.color, self.border_color, self.border_width)
+    
+class QTriangle(QRectPlus):
+    def draw(self, painter):
+        painter.setPen(QPen(self.border_color, self.border_width))
+        painter.setBrush(self.color)
+        painter.setRenderHint(QPainter.Antialiasing)
+        path = QPainterPath()
+        path.moveTo(self.bottomLeft())
+        path.lineTo(self.bottomRight())
+        path.lineTo(self.center().x(),self.top())
+        path.lineTo(self.bottomLeft())
+        painter.drawPath(path)
+
+    def copy(self):
+        return QTriangle(self, self.color, self.border_color, self.border_width)
 
 
 # QRect with a image inside the rectangle
