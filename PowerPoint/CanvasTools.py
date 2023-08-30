@@ -39,6 +39,11 @@ class QRectPlus(QRect):
     def equals(self, eps=0, mode = 'all'):
         return True
     
+    def __str__(self):
+        return f"{self.__class__.__name__}{self.top(),self.left(), self.height(), self.width()}"
+    
+    def __repr__(self):
+        return self.__str__()
 
 class QEllipse(QRectPlus):
     def draw(self, painter):
@@ -48,6 +53,21 @@ class QEllipse(QRectPlus):
 
     def copy(self):
         return QEllipse(self, self.color, self.border_color, self.border_width)
+    
+class QTriangle(QRectPlus):
+    def draw(self, painter):
+        painter.setPen(QPen(self.border_color, self.border_width))
+        painter.setBrush(self.color)
+        painter.setRenderHint(QPainter.Antialiasing)
+        path = QPainterPath()
+        path.moveTo(self.bottomLeft())
+        path.lineTo(self.bottomRight())
+        path.lineTo(self.center().x(),self.top())
+        path.lineTo(self.bottomLeft())
+        painter.drawPath(path)
+
+    def copy(self):
+        return QTriangle(self, self.color, self.border_color, self.border_width)
 
 
 # QRect with a image inside the rectangle
@@ -69,9 +89,11 @@ class QRectImage(QRectPlus):
 
 
 class QRectGroup(QRect):
-    def __init__(self):
+    def __init__(self, objects = []):
         QRect.__init__(self, 0,0,10,10)
-        self.objects = []
+        self.objects = objects
+        if objects:
+            self.update()
     
     def translate(self, v):
         super().translate(v)

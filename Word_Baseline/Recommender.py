@@ -135,6 +135,8 @@ class Recommender(QMainWindow):
             #print(f' La commande utilisée est : {command} et la prédiction est : {pred_command}')
             if pred_command == command:
                 self.recommendThresholdML[ind] = self.recommendThresholdML[ind] + 1
+                ok = False
+                break
             
             # la confiance doit etre > 95% (meme si ce n'est pas forcement un bon facteur)
             if (pred_command != "WriteWord" and confiance > 0.95 and command != pred_command):
@@ -228,6 +230,8 @@ class Recommender(QMainWindow):
             if pred_command == command:
                 ind = self.hardCodedCommands.index(pred_command)
                 self.recommendThreshold[ind] = self.recommendThreshold[ind] + 1
+                pred_command= None
+
             
             self.setText(pred_command)
             self.memory2.clear()
@@ -243,6 +247,8 @@ class Recommender(QMainWindow):
         if m_size2 >= self.max_size_memory: self.memory2.pop(0)
 
     def setText(self, command):
+        if command is None:
+            return
         r =f'<div style="font-weight:600; color:#aa0000;">{command}</div>'
         t1 = f'<div style="font-size:24px;">Vous devriez peut-être utiliser la commande</div>'
 

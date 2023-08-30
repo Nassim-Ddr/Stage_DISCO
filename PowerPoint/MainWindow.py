@@ -12,7 +12,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from Canvas import *
 from Recommender import *
-import icons.resources
+import resources
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent = None ):
@@ -65,7 +65,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QMenuBar{
             Background: #b8442c;
             color:white;
-            font-size:11px; }
+            font-size:14px; }
         QMenuBar::item { color : white; }
         QMenuBar::item:selected { background: #dc5939; }
         QMenuBar::item:pressed { background: #dc5939;  }
@@ -117,6 +117,7 @@ class MainWindow(QtWidgets.QMainWindow):
         shapeMenu = bar.addMenu("Shape")
         actRectangle = shapeMenu.addAction(QIcon(":/icons/rectangle.png"), "&Rectangle", self.rectangle )
         actEllipse = shapeMenu.addAction(QIcon(":/icons/ellipse.png"), "&Ellipse", self.ellipse)
+        actTriangle = shapeMenu.addAction(QIcon(":/icons/triangle.png"), "&Triangle", self.triangle)
         actFree = shapeMenu.addAction(QIcon(":/icons/free.png"), "&Free drawing", self.free_drawing)
         actSave = fileMenu.addAction(QIcon(":/image/images/save.png"), "&Save", self.save, QKeySequence("Ctrl+S"))
         # Toolbar des formes
@@ -124,7 +125,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addToolBar( shapeToolBar )
         shapeToolBar.addAction( actRectangle )
         shapeToolBar.addAction( actEllipse )
-
+        shapeToolBar.addAction( actTriangle )
+        
         # Menu des modes
         modeMenu = bar.addMenu("Mode")
         actMove = modeMenu.addAction(QIcon(":/icons/move.png"), "&Move", self.move)
@@ -237,6 +239,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def ellipse(self):
         self.log_action("Shape Mode: circle")
         self.canvas.setTool("ellipse")
+
+    def triangle(self):
+        self.log_action("Shape Mode: circle")
+        self.canvas.setTool("triangle")
 
     def free_drawing(self):
         self.log_action("Shape mode: free drawing")
