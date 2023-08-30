@@ -96,7 +96,7 @@ class Photoshop_Recommander(QMainWindow) :
         self.recomend_command(self.command_labels[predicted_class.item()], confidence.item())
 
     def recomend_command(self, command, confidence) : 
-        self.alert.update("recommend command : " + command + "\n" + "confidence : "+ str(confidence))
+        self.alert.update("recommend command : " + command + "\n" + "confidence : "+ f'{(confidence*100):.2f} %')
 
 if __name__ == '__main__' : 
 
