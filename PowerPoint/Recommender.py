@@ -113,7 +113,6 @@ class Recommender(QMainWindow):
 
     def update(self, state, autre=None, command = None):
         print(" =========== Predicting ? =============")
-        state = self.QImageToCvMat(state)
         m_size = len(self.memory)
         if m_size > 0:
             if isinstance(self.model, HardCodedModel):
@@ -126,6 +125,7 @@ class Recommender(QMainWindow):
                             self.mode = 1
                             self.timer.start()
             else:
+                state = self.QImageToCvMat(state)
                 preds_conf = np.array([self.model.predict(s, state) for s in self.memory])
                 index = np.argmax(preds_conf[:,1])
                 index = -1
@@ -154,7 +154,8 @@ class Recommender(QMainWindow):
             self.text.setText(f'Prediction n°{self.count}: {r}\nConfiance: {c}')
 
     def QImageToCvMat(self, image):
-        image.save(f'./images/state.jpg')
+        if not image.save("images/state.png"):
+            print("Warning: saving failed image state.png ")
         image = Image.open("./images/state.jpg")
         image = np.asarray(image)
         return image
