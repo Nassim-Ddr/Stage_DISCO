@@ -20,7 +20,7 @@ class Recommender(QMainWindow):
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
             self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setMinimumSize(QSize(280*2,250))
+        self.setMinimumSize(QSize(420,200))
         self.container = QWidget()
         layout = QVBoxLayout(self.container)
         layout.setSpacing(0)
@@ -78,16 +78,17 @@ class Recommender(QMainWindow):
         # self.commands = ["WriteWord","CopyPaste (CTRL + C -> CTRL + V)","WordDel (CTRL + Backspace)","Search&Replace (CTRL + R)"]
         self.commands = ["WriteWord","CopyPaste","WordDel","Search&Replace"]
         self.model = Model(model, self.commands)
-        """self.hardCodedCommands = ["SelectAll (CTRL+ A)", 
-        "SelectToEndOfLine (Shift + Fin/End)", 
-        "SelectRightWord (CTRL + Shift + Right)", 
-        "MoveToEndOfLine (Fin/End)", 
-        "JumpRightWord (CTRL + Right)", 
-        "SelectToStartOfLine (Shift + Home)", 
-        "SelectLeftWord (CTRL + Shift + Left)",
-        "MoveToStartOfLine (Home)",
-        "JumpLeftWord (CTRL + Left)"
-        ]"""
+
+        # self.hardCodedCommands = ["SelectAll (CTRL+ A)", 
+        # "SelectToEndOfLine (Shift + Fin/End)", 
+        # "SelectRightWord (CTRL + Shift + Right)", 
+        # "MoveToEndOfLine (Fin/End)", 
+        # "JumpRightWord (CTRL + Right)", 
+        # "SelectToStartOfLine (Shift + Home)", 
+        # "SelectLeftWord (CTRL + Shift + Left)",
+        # "MoveToStartOfLine (Home)",
+        # "JumpLeftWord (CTRL + Left)"
+        # ]
 
         self.hardCodedCommands = ["SelectAll", 
         "SelectToEndOfLine", 

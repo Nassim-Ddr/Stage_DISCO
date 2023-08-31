@@ -38,7 +38,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # useless Canvas
         w = QtWidgets.QWidget() 
         w.setLayout( QtWidgets.QVBoxLayout())
-        c = QtWidgets.QWidget()
+        c = QLabel()
+        self.preview = c
         c.setMinimumSize(150,100)
         c.setMaximumSize(150,100)
         c.setStyleSheet("border: 1px solid; border-color:grey; background-color:white")

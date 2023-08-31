@@ -88,10 +88,10 @@ class Recommender_UI(QMainWindow):
     def topLeft(self):
         # no need to move the point of the geometry rect if you're going to use
         # the reference top left only
-        topLeftPoint = QApplication.desktop().availableGeometry().topLeft()
-        self.move(topLeftPoint + QPoint(- self.size().width(), 150))
+        G = QApplication.desktop().availableGeometry()
+        topLeftPoint = G.topRight() +QPoint(0, self.size().width() -50)
+        self.move(topLeftPoint + QPoint(0,-self.size().height() - 10))
         self.timer.start()
-        pass
 
     def update(self, text, autre=None):
         print("started")
@@ -114,13 +114,13 @@ class Recommender_UI(QMainWindow):
     # Normal move
     def initMove(self, waitTime = 4000):
         self.timer.setInterval(10)
-        self.move(self.pos() + QPoint(self.mode*5,0))
-        maxRight = QApplication.desktop().availableGeometry().left()
+        self.move(self.pos() + QPoint(self.mode*5*(-1),0))
+        maxRight = QApplication.desktop().availableGeometry().right() - self.size().width()
         if self.mode == 1:
-            if self.pos().x() >= maxRight+10:
+            if self.pos().x() <= maxRight-10:
                 self.mode = -1
                 self.timer.setInterval(waitTime)
         else:
-            if self.pos().x() <= maxRight - self.size().width():
+            if self.pos().x() >= maxRight + self.size().width():
                 self.mode = 1
                 self.timer.stop()

@@ -106,8 +106,8 @@ class Recommender(QMainWindow):
         # no need to move the point of the geometry rect if you're going to use
         # the reference top left only
         G = QApplication.desktop().availableGeometry()
-        topLeftPoint = G.bottomLeft()  if self.direction == 'left' else G.bottomRight() -QPoint(self.size().width(), 0)
-        self.move(topLeftPoint + QPoint(0,-self.size().height() - 10 - Recommender.diff))
+        topLeftPoint = G.bottomLeft()  if self.direction == 'left' else G.topRight() - QPoint(self.size().width(), 0)
+        self.move(topLeftPoint - QPoint(0,-self.size().height() - 10 - Recommender.diff))
         if self.moving:
             self.timer.start()
         Recommender.diff += self.size().height() - 10
@@ -151,6 +151,9 @@ class Recommender(QMainWindow):
         if m_size >= self.max_size_memory: self.memory.pop(0)
 
     def setText(self, cmd, confiance = None):
+        match cmd:
+            case "Copy + Align" : cmd = "Align Copy <div>[CTRL + SHIFT + MOUSE DRAG]</div>"
+            case "Rows Duplication" : cmd = 'Select Row [SHIFT + CLICK] <div>+</div> <div>Align Copy [CTRL + SHIFT + MOUSE DRAG]</div>'
         self.count += 1
         r =f'<div style="font-weight:600; color:#aa0000;">{cmd}</div>'
         c =f'<div style="font-weight:600; color:#aa0000;">{confiance}</div>'
