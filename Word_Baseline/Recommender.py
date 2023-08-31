@@ -75,18 +75,32 @@ class Recommender(QMainWindow):
         self.modelHard = HardCodedModel(texteditor,historySize=max_size_memory)
         # variable du recommender
         # self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
-        self.commands = ["WriteWord","CopyPaste (CTRL + C -> CTRL + V)","WordDel (CTRL + Backspace)","Search&Replace (CTRL + R)"]
+        # self.commands = ["WriteWord","CopyPaste (CTRL + C -> CTRL + V)","WordDel (CTRL + Backspace)","Search&Replace (CTRL + R)"]
+        self.commands = ["WriteWord","CopyPaste","WordDel","Search&Replace"]
         self.model = Model(model, self.commands)
-        self.hardCodedCommands = ["CTRL+ A (SelectAll)", 
-        "Shift + Fin (End) Button", 
-        "CTRL + Shift + Right", 
-        "Fin (End)", 
-        "CTRL + Right", 
-        "Shift + Home", 
-        "CTRL + Shift + Left",
-        "Home",
-        "CTRL + Left"
+        """self.hardCodedCommands = ["SelectAll (CTRL+ A)", 
+        "SelectToEndOfLine (Shift + Fin/End)", 
+        "SelectRightWord (CTRL + Shift + Right)", 
+        "MoveToEndOfLine (Fin/End)", 
+        "JumpRightWord (CTRL + Right)", 
+        "SelectToStartOfLine (Shift + Home)", 
+        "SelectLeftWord (CTRL + Shift + Left)",
+        "MoveToStartOfLine (Home)",
+        "JumpLeftWord (CTRL + Left)"
+        ]"""
+
+        self.hardCodedCommands = ["SelectAll", 
+        "SelectToEndOfLine", 
+        "SelectRightWord", 
+        "MoveToEndOfLine", 
+        "JumpRightWord", 
+        "SelectToStartOfLine", 
+        "SelectLeftWord",
+        "MoveToStartOfLine",
+        "JumpLeftWord"
         ]
+
+        
         self.recommendThreshold = np.zeros(len(self.hardCodedCommands))
         self.recommendThresholdML = np.zeros(4)
         self.stopRecom = 2
@@ -141,7 +155,7 @@ class Recommender(QMainWindow):
             # la confiance doit etre > 95% (meme si ce n'est pas forcement un bon facteur)
             if (pred_command != "WriteWord" and confiance > 0.95 and command != pred_command):
                 # Pour eviter de recommander des la premiere suppression de mot
-                if pred_command == "WordDel (CTRL + Backspace)" and sumstate < 4 :
+                if pred_command == "WordDel" and sumstate < 4 :
                     break
                 
                 # nous avons suffisament recommande on n'affiche rien (cela sera pareil pour le modele hard code)
@@ -227,17 +241,19 @@ class Recommender(QMainWindow):
                 pred_command = None
 
             # On veut eviter de continuer a recommander trop
-            if pred_command == command:
+            if pred_command == command and pred_command is not None:
                 ind = self.hardCodedCommands.index(pred_command)
                 self.recommendThreshold[ind] = self.recommendThreshold[ind] + 1
                 pred_command= None
 
-            
+            #print(f'ALLO {pred_command} - {command}')
             self.setText(pred_command)
             self.memory2.clear()
             self.memory.clear()
             self.texmem.clear()
             #print(f'Cleared hard ? {len(self.memory)} - {len(self.memory2)} - {len(self.texmem)}')
+            if pred_command is None:
+                return
             self.timer.start()
             break
         #print(f'Henlo clear {len(self.memory2)} and {len(self.texmem)}')
@@ -250,9 +266,36 @@ class Recommender(QMainWindow):
         if command is None:
             return
         r =f'<div style="font-weight:600; color:#aa0000;">{command}</div>'
-        t1 = f'<div style="font-size:24px;">Vous devriez peut-être utiliser la commande</div>'
+        t1 = f'<div style="font-size:20px;">Vous devriez peut-être utiliser la commande</div>'
+        match command:
+            case "WordDel":
+                tmp = "(CTRL + Backspace)"
+            case "CopyPaste":
+                tmp = "(CTRL + C -> CTRL + V)"
+            case "Search&Replace":
+                tmp = "(CTRL + R)"
+            case "SelectAll":
+                tmp = "(CTRL+ A)"
+            case "SelectToEndOfLine":
+                tmp = "(Shift + Fin/End)"
+            case "SelectRightWord":
+                tmp = "(CTRL + Shift + Right)"
+            case "MoveToEndOfLine":
+                tmp = "(Fin/End)"
+            case "JumpRightWord":
+                tmp = "(CTRL + Right)"
+            case "SelectToStartOfLine":
+                tmp = "(Shift + Home)"
+            case "SelectLeftWord" :
+                tmp = "(CTRL + Shift + Left)"
+            case "MoveToStartOfLine" :
+                tmp = "(Home)"
+            case "JumpLeftWord" :
+                tmp = "(CTRL + Left)"
+        
+        t2 = f'<div style="font-size:12px;">{tmp}</div>'
 
-        self.text.setText(f'{t1}:{r}')
+        self.text.setText(f'{t1}:{r}{t2}')
 
     
     # Normal move

@@ -15,17 +15,27 @@ class HardCodedModel():
     def __init__(self,texteditor,historySize):
         self.limit = historySize
         self.texteditor = texteditor
-        self.hardCodedCommands = ["CTRL+ A (SelectAll)", 
-        "Shift + Fin (End) Button", 
-        "CTRL + Shift + Right", 
-        "Fin (End)", 
-        "CTRL + Right", 
-        "Shift + Home", 
-        "CTRL + Shift + Left",
-        "Home",
-        "CTRL + Left"
-        ]
+        # self.hardCodedCommands = ["SelectAll (CTRL+ A)", 
+        # "SelectToEndOfLine (Shift + Fin/End)", 
+        # "SelectRightWord (CTRL + Shift + Right)", 
+        # "MoveToEndOfLine (Fin/End)", 
+        # "JumpRightWord (CTRL + Right)", 
+        # "SelectToStartOfLine (Shift + Home)", 
+        # "SelectLeftWord (CTRL + Shift + Left)",
+        # "MoveToStartOfLine (Home)",
+        # "JumpLeftWord (CTRL + Left)"
+        # ]
         
+        self.hardCodedCommands = ["SelectAll", 
+        "SelectToEndOfLine", 
+        "SelectRightWord", 
+        "MoveToEndOfLine", 
+        "JumpRightWord", 
+        "SelectToStartOfLine", 
+        "SelectLeftWord",
+        "MoveToStartOfLine",
+        "JumpLeftWord"
+        ]
         
     def predict(self, oldState, newState):
         #inputData, label = inputData[:len(inputData)-1], inputData[-1]
@@ -75,7 +85,7 @@ class HardCodedModel():
                     return self.hardCodedCommands[4]
         elif oldPos == newPos :
             # rien ne s'est passe
-            return 
+            return None
         # La selection se fait de droite à gauche
         elif oldPos > newPos :
             if oldPos - newPos > 3 :

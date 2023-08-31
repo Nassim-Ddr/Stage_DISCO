@@ -200,20 +200,20 @@ class CustomTextEdit(QTextEdit):
     def handle_move_cursor_left(self):
         #print(self.textCursor().position())
         #print("je vais a gauche ",self.textCursor().position())
-        self.updated("CTRL + Left")
+        self.updated("JumpLeftWord")
 
     def handle_move_cursor_right(self):
         #print(self.textCursor().position())
         #print("je vais à droite ",self.textCursor().position())
-        self.updated("CTRL + Right") 
+        self.updated("JumpRightWord") 
 
     def handle_move_start_line(self):
         #print("going to the start of the line")
-        self.updated("Home")
+        self.updated("MoveToStartOfLine")
 
     def handle_move_end_line(self):
         #print("going to the end of the line")
-        self.updated("Fin (End)")
+        self.updated("MoveToEndOfLine")
     
     def handle_selectionR(self):
         cursor = self.textCursor()
@@ -233,19 +233,19 @@ class CustomTextEdit(QTextEdit):
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
 
         #print("Test : ",cursor.blockNumber()," test 2 ",cursor.columnNumber())
-        self.updated("CTRL + Shift + Right")
+        self.updated("SelectRightWord")
 
     def handle_WordSelectionL(self):
         cursor = self.textCursor()
         #print("Selection start: %d end: %d" % (cursor.selectionStart(), cursor.selectionEnd()))
-        self.updated("CTRL + Shift + Left")
+        self.updated("SelectLeftWord")
         
 
     def handle_fullselection(self):
         cursor = self.textCursor()
         #print("full selection")
         
-        self.updated("CTRL+ A (SelectAll)")
+        self.updated("SelectAll")
         #print("after : ",cursor.blockNumber(),cursor.columnNumber())
     
     def handle_goLeftSingle(self):
@@ -255,21 +255,21 @@ class CustomTextEdit(QTextEdit):
         self.updated()
     
     def handle_selectLinetoStart(self):
-        self.updated("Shift + Home")
+        self.updated("SelectToStartOfLine")
     
     def handle_selectLinetoEnd(self):
-        self.updated("Shift + End")
+        self.updated("SelectToEndOfLine")
 
     
     # Others ---------------------------------------------------------------------
 
     def handle_backspace(self):
         #print("Supprimer le mot")
-        self.updated("WordDel (CTRL + Backspace)")
+        self.updated("WordDel")
     
     
     def handle_replace(self):
-        self.updated("Search&Replace (CTRL + R)")
+        self.updated("Search&Replace")
         #print("replace")
     
     
