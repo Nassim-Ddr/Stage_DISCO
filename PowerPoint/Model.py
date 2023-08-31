@@ -163,7 +163,7 @@ class HardCodedModel():
     # "Premier Plan", "Arriere Plan"
     # "AlignLeft", "AlignTop", "AlignRight", "AlignBottom"
     def predict(self, a, b, eps = 20):
-        L = [self.predictForeorBackground, self.predictCopyAlign, self.predictCopyDrag, self.predictAlign]
+        L = [self.predictForeorBackground, self.compareRow, self.predictCopyAlign, self.predictCopyDrag, self.predictAlign]
         for f in L:
             pred = f(a,b, eps)
             if pred is not None: return pred
@@ -173,7 +173,10 @@ class HardCodedModel():
         # Meme nombre d'objets, donc possiblement un déplacement d'objet
         index1, index2, r = self.noChange(a, b, self.pos, eps=20)
         a, b = [self.pos(o) for o in a],  [self.pos(o) for o in b]
-        if len(a) == len(b) and len(b)>1 and not r:
+        if r:
+            print("Align: No Change")
+            return 
+        if len(a) == len(b) and len(b)>1:
             L = None
             A, B = np.array(a), np.array(b)
             # Tri
@@ -188,7 +191,6 @@ class HardCodedModel():
             index = np.argmax(D)
             if D[index] == 0: return 
             return self.args[L[index]]
-        return 
     
     def predictCopyAlign(self, a, b, eps = 20):
         # Meme nombre d'objets, donc possiblement un déplacement d'objet 
@@ -289,7 +291,64 @@ class HardCodedModel():
                 if np.any(x<0) and np.all(x<=0): return "Arriere Plan"
             return 
         return 
+    
+    def segment(self, objects, eps = 20, mode='rows', first = None):
+        L = []
+        S = objects.copy()
+        f = 'y' if mode=='rows' else 'x'
+        while S:
+            o = S.pop()
+            row = [o]
+            x1 = getattr(o.bottomLeft(), f)()
+            for o2 in S:
+                x2 = getattr(o2.bottomLeft(), f)()
+                if np.abs(x1 - x2) <= eps: row.append(o2)
+            S = list(filter(lambda i: i not in row, S))
+            if first is not None and first in row:
+                L.insert(0, row)
+            else: L.append(row)
+        return L
+    
+    def compareRow(self, a, b,  eps = 20):
+        # color, position, size
+        o = self.select(a,b, state_function=self.stateGroup)
+        if o is None: return
+        B = self.segment(b, mode='rows', first = o)
+        # print(f'Row duplicate ?\n {B = }')
+        B = [QRectGroup(o) for o in B if len(o)>1]
+        if len(B)>1:
+            # print("Enter")
+            o1 = B[0]
+            for o2 in B[1:]:
+                if self.compareGroup(o1, o2, eps):
+                    return "Rows Duplication"
+        # print()
+        B = self.segment(b, mode='columns', first = o)
+        # print(f'Column duplicate ?\n {B = }')
+        B = [QRectGroup(o) for o in B if len(o)>1]
+        if len(B)>1:
+            # print("Enter")
+            o1 = B[0]
+            for o2 in B[1:]:
+                if self.compareGroup(o1, o2, eps):
+                    return "Columns Duplication"
+        print("Rien Du Tout")
 
+    # Select the changing or created object in the canvas
+    def select(self, a, b, state_function, eps = 10):
+        if len(a) < len(b): return b[-1]
+        if len(a) > len(b): return
+        A = np.array([state_function(o) for o in a])
+        B = np.array([state_function(o) for o in b])
+        # Sort the array
+        index1, index2 = self.argsort(A, B)
+        A = np.array(A)[index1]
+        B = np.array(B)[index2]
+        # select nothing if no change
+        change = np.all(np.abs(A - B) <= eps, axis=1)
+        if np.all(change): return 
+        return np.where(~change)[0][0]
+    
     ############# UTILE  ##################
     def pos(self, o):
         return np.array((o.left(), o.top(), o.right(), o.bottom()))
@@ -312,6 +371,7 @@ class HardCodedModel():
                 o.color.red(), o.color.green(), o.color.blue(), 
                 o.border_color.red(), o.border_color.green(), o.border_color.blue())
 
+    # Sort element by value in tuple
     def argsort(self, n1, n2):
         dtype = [(str(i),int) for i in range(len(n1[0]))]
         n1 = np.argsort([np.array(tuple(x), dtype=dtype) for x in n1])
@@ -326,9 +386,10 @@ class HardCodedModel():
         o2 = np.array(self.state(o2))
         return np.all(np.abs(o1 - o2) <= 10)
 
-    def compareGroup(self, o1, o2, D = None, eps=20):
+    # Compare Group of objects
+    def compareGroup(self, o1, o2, eps=20):
         if len(o2.objects) != len(o1.objects): return False
-        # getState
+        # getState of bounding rectangle
         top, left = min(o1.top(), o1.bottom()), min(o1.left(), o1.right())
         L1 = [self.stateGroup(o, (top,left)) for o in o1.objects]
         top, left = min(o2.top(), o2.bottom()), min(o2.left(), o2.right())
@@ -337,14 +398,14 @@ class HardCodedModel():
         index1, index2 = self.argsort(L1, L2)
         L1 = np.array(L1)[index1]
         L2 = np.array(L2)[index2]
-        return np.all((L1 - L2) <= eps)
+        return np.all(np.abs(L1 - L2) <= eps)
 
-    def noChange(self, s1,s2, state_function, eps = 10):
+    def noChange(self, s1,s2, state_function, eps = 5):
         if len(s1) != len(s2) or len(s1)==0 or len(s2)==0: return None,None,False
         L1 = np.abs([state_function(o) for o in s1])
         L2 = np.abs([state_function(o) for o in s2])
         index1, index2 = self.argsort(L1, L2)
-        return index1, index2, np.all((L1[index1] - L2[index2]) <= eps)
+        return index1, index2, np.all(np.abs(L1[index1] - L2[index2]) <= eps)
 
             
 ##################### Train Function #########################

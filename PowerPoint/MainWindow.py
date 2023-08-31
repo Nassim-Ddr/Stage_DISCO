@@ -65,7 +65,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QMenuBar{
             Background: #b8442c;
             color:white;
-            font-size:11px; }
+            font-size:14px; }
         QMenuBar::item { color : white; }
         QMenuBar::item:selected { background: #dc5939; }
         QMenuBar::item:pressed { background: #dc5939;  }
