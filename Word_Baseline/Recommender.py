@@ -20,7 +20,7 @@ class Recommender(QMainWindow):
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             self.setAttribute(Qt.WA_NoSystemBackground, True)
             self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setMinimumSize(QSize(280*2,250))
+        self.setMinimumSize(QSize(420,200))
         self.container = QWidget()
         layout = QVBoxLayout(self.container)
         layout.setSpacing(0)
@@ -75,7 +75,7 @@ class Recommender(QMainWindow):
         self.modelHard = HardCodedModel(texteditor,historySize=max_size_memory)
         # variable du recommender
         # self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
-        self.commands = ["WriteWord","CopyPaste \n(CTRL + C -> CTRL + V)","WordDel \n(CTRL + Backspace)","Search&Replace \n(CTRL + R)"]
+        self.commands = ["WriteWord","CopyPaste (CTRL + C -> CTRL + V)","WordDel (CTRL + Backspace)","Search&Replace (CTRL + R)"]
         self.model = Model(model, self.commands)
         self.hardCodedCommands = ["CTRL+ A \n(SelectAll)", 
         "Shift + Fin (End) Button", 
@@ -227,7 +227,7 @@ class Recommender(QMainWindow):
                 pred_command = None
 
             # On veut eviter de continuer a recommander trop
-            if pred_command == command:
+            if pred_command == command and pred_command is not None:
                 ind = self.hardCodedCommands.index(pred_command)
                 self.recommendThreshold[ind] = self.recommendThreshold[ind] + 1
                 pred_command= None
@@ -250,7 +250,7 @@ class Recommender(QMainWindow):
         if command is None:
             return
         r =f'<div style="font-weight:600; color:#aa0000;">{command}</div>'
-        t1 = f'<div style="font-size:24px;">Vous devriez peut-être utiliser la commande</div>'
+        t1 = f'<div style="font-size:24px;">You should use this command</div>'
 
         self.text.setText(f'{t1}:{r}')
 
