@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QWidget, QFileDialog, QApplication
 from PyQt5.QtCore import QRect, QPoint, Qt, pyqtSlot
-from PyQt5.QtGui import QColor, QImage
+from PyQt5.QtGui import QColor, QImage, QPixmap
 import numpy as np
 from CanvasTools import *
 from Logger import Logger
@@ -110,7 +110,7 @@ class Canvas(QWidget):
             self.update()
                             
     def mouseMoveEvent(self, event):
-        if self.pStart != None:
+        if self.pStart is not None:
             # Si le canvas est deplace, il faut recentre le curseur
             oldV = (self.cursorPos - self.pStart)
             self.cursorPos = event.pos()
@@ -175,6 +175,7 @@ class Canvas(QWidget):
         self.cursorPos = None
         self.command = None
         self.update()
+        
 
         
     def paintEvent(self, event):
@@ -185,6 +186,12 @@ class Canvas(QWidget):
         # Toutes les figures
         for form in self.Lforms: form.draw(painter)
         self.selection.draw(painter)
+        if self.pStart is None: self.drawPreview()
+    
+    def drawPreview(self):
+        image = self.getImage()
+        image = image.scaled(self.parent.preview.size())
+        self.parent.preview.setPixmap(QPixmap.fromImage(image))
 
     def reset(self):
         # attributs d'affichage
