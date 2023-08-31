@@ -75,9 +75,9 @@ class Recommender(QMainWindow):
         self.modelHard = HardCodedModel(texteditor,historySize=max_size_memory)
         # variable du recommender
         # self.model = Model(model, ["MoveWR","MoveWL","MoveHome","MoveEnd","Tab","WordDel","Replace","SelectWR","SelectWL","SelectAll"])
-        self.commands = ["WriteWord","CopyPaste \n(CTRL + C -> CTRL + V)","WordDel \n(CTRL + Backspace)","Search&Replace \n(CTRL + R)"]
+        self.commands = ["WriteWord","CopyPaste (CTRL + C -> CTRL + V)","WordDel (CTRL + Backspace)","Search&Replace (CTRL + R)"]
         self.model = Model(model, self.commands)
-        self.hardCodedCommands = ["CTRL+ A \n(SelectAll)", 
+        self.hardCodedCommands = ["CTRL+ A (SelectAll)", 
         "Shift + Fin (End) Button", 
         "CTRL + Shift + Right", 
         "Fin (End)", 
