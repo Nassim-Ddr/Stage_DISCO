@@ -152,7 +152,8 @@ class Recommender(QMainWindow):
 
     def setText(self, cmd, confiance = None):
         match cmd:
-            case "Copy + Align" : cmd = "Align Copy <div>[CTRL + SHIFT + MOUSE DRAG]</div>"
+            case "Copy + Align" : cmd = "Align Copy '<div style='font-size:20px'[CTRL + SHIFT + MOUSE DRAG]</div>"
+            case "Copy + Drag" : cmd = "Drag Copy  '<div style='font-size:20px'[CTRL + MOUSE DRAG]</div>"
             case "Rows Duplication" : cmd = 'Select Row [SHIFT + CLICK] <div>+</div> <div>Align Copy [CTRL + SHIFT + MOUSE DRAG]</div>'
         self.count += 1
         r =f'<div style="font-weight:600; color:#aa0000;">{cmd}</div>'
